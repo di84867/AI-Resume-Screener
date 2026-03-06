@@ -70,18 +70,20 @@ def apply_adaptive_theme():
     t = st.session_state.theme
     if t == 'dark':
         # Deep, rich midnight blue background for that "Teal" dark mode feel
-        bg = "#0B0F19"; text = "#E2E8F0"; card = "#111827"; card_border = "#1F2937"
-        accent = "#2DD4BF"; accent_light = "#5EEAD4"; accent_text = "#134E4A" # Teal accents
+        bg = "#0B0F19"; text = "#E2E8F0"; card = "#151F32"; card_border = "#1F2937"
+        accent = "#2DD4BF"; accent_light = "#5EEAD4"; accent_text = "#042F2E" # Teal accents
         success = "#10B981"; warning = "#F59E0B"; error = "#EF4444"
-        glass = "rgba(17, 24, 39, 0.7)"
+        glass = "rgba(21, 31, 50, 0.75)"
         muted = "#9CA3AF"
+        color_scheme = "dark"
     else:
         # Crisp, clean professional light mode
         bg = "#F8FAFC"; text = "#0F172A"; card = "#FFFFFF"; card_border = "#E2E8F0"
-        accent = "#0D9488"; accent_light = "#2DD4BF"; accent_text = "#FFFFFF" # Teal accents
+        accent = "#0D9488"; accent_light = "#14B8A6"; accent_text = "#FFFFFF" # Teal accents
         success = "#059669"; warning = "#D97706"; error = "#DC2626"
-        glass = "rgba(255, 255, 255, 0.9)"
+        glass = "rgba(255, 255, 255, 0.85)"
         muted = "#64748B"
+        color_scheme = "light"
 
     css = f"""
     <style>
@@ -95,12 +97,13 @@ def apply_adaptive_theme():
             --card: {card};
             --card-border: {card_border};
             --muted: {muted};
+            color-scheme: {color_scheme}; /* Fixes native input and scrollbar colors */
         }}
 
         /* Main Container */
         .stApp {{ background: {bg} !important; color: {text} !important; font-family: 'Inter', sans-serif !important; }}
         [data-testid="stSidebar"] {{ display: none !important; }}
-        .main .block-container {{ padding-top: 1.5rem !important; max-width: 1200px !important; }}
+        .main .block-container {{ padding-top: 1.5rem !important; max-width: 1250px !important; }}
 
         /* Typography */
         h1, h2, h3, h4, h5, h6, .brand-text {{ 
@@ -134,17 +137,27 @@ def apply_adaptive_theme():
             border: none !important;
             border-radius: 8px !important;
             font-weight: 600 !important;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
             text-decoration: none !important;
             display: flex;
             justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }}
         .stButton>button:hover, div[data-baseweb="button"]:hover, .stDownloadButton>button:hover, .stLinkButton>a:hover {{
             transform: translateY(-2px);
             background: {accent_light} !important;
-            box-shadow: 0 4px 12px {accent}44 !important;
+            box-shadow: 0 6px 15px {accent}55 !important;
         }}
         
+        /* Container/Cards */
+        div[data-testid="stVerticalBlock"] > div[style*="border"] {{
+            background-color: {card} !important;
+            border-color: {card_border} !important;
+            border-radius: 12px !important;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            padding: 1rem;
+        }}
+
         /* Expander headers and text */
         .streamlit-expanderHeader, .streamlit-expanderHeader p {{ 
             color: {text} !important;
@@ -153,10 +166,11 @@ def apply_adaptive_theme():
 
         /* Inputs (Text, Area, Number, Select) */
         .stTextInput input, .stTextArea textarea, .stNumberInput input, .stSelectbox [data-baseweb="select"] {{
-            background-color: {card} !important;
+            background-color: {bg} !important;
             border: 1px solid {card_border} !important;
             border-radius: 8px !important;
             color: {text} !important;
+            transition: border-color 0.2s ease;
         }}
         .stTextInput input:focus, .stTextArea textarea:focus {{
             border-color: {accent} !important;
@@ -167,19 +181,23 @@ def apply_adaptive_theme():
         div[data-baseweb="popover"], div[data-baseweb="menu"] {{
             background-color: {card} !important;
             border: 1px solid {card_border} !important;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15) !important;
+            border-radius: 8px;
         }}
         div[data-baseweb="popover"] ul, div[data-baseweb="menu"] li {{
-            background-color: {card} !important;
+            background-color: transparent !important;
             color: {text} !important;
         }}
         div[data-baseweb="popover"] li:hover {{
-            background-color: {accent} !important;
-            color: {accent_text} !important;
+            background-color: {accent}22 !important;
+            color: {accent} !important;
         }}
 
-        /* Checkboxes & Radios */
+        /* Checkboxes, Radios, Toggles */
         .stCheckbox label, .stRadio label {{ color: {text} !important; }}
-        .stCheckbox div[role="checkbox"] {{ background-color: {card} !important; }}
+        .stCheckbox div[role="checkbox"] {{ background-color: {card} !important; border-color: {card_border} !important;}}
+        .stCheckbox div[role="checkbox"][aria-checked="true"] {{ background-color: {accent} !important; border-color: {accent} !important;}}
+        div[data-testid="stWidgetLabel"] p {{ color: {muted} !important; font-weight: 500; font-size: 0.85rem !important; text-transform: uppercase; letter-spacing: 0.05em;}}
         
         /* Metric Cards */
         div[data-testid="metric-container"] {{
@@ -187,6 +205,7 @@ def apply_adaptive_theme():
             border: 1px solid {card_border} !important;
             border-radius: 12px !important;
             padding: 1rem !important;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         }}
         [data-testid="stMetricValue"] {{ color: {accent} !important; font-weight: 700 !important; }}
 
@@ -194,42 +213,53 @@ def apply_adaptive_theme():
         .stTabs [data-baseweb="tab-list"] {{
             background-color: transparent !important;
             border-bottom: 2px solid {card_border};
+            gap: 20px;
         }}
         .stTabs [data-baseweb="tab"] {{
             color: {muted} !important;
             background-color: transparent !important;
+            padding-bottom: 12px !important;
+            padding-top: 12px !important;
+            font-weight: 500 !important;
         }}
         .stTabs [aria-selected="true"] {{
-            color: {accent} !important;
-            border-bottom: 2px solid {accent} !important;
+            color: {text} !important;
+            border-bottom: 3px solid {accent} !important;
+            font-weight: 600 !important;
+        }}
+        .stTabs [data-baseweb="tab"]:hover {{
+            color: {text} !important;
         }}
 
         /* File Uploader */
         [data-testid="stFileUploader"] section {{
-            background-color: {card} !important;
+            background-color: {bg} !important;
             border: 2px dashed {card_border} !important;
             border-radius: 12px !important;
             color: {text} !important;
+            transition: all 0.2s ease;
+            padding: 2rem !important;
         }}
-        [data-testid="stFileUploader"] section:hover {{ border-color: {accent} !important; }}
+        [data-testid="stFileUploader"] section:hover {{ border-color: {accent} !important; background-color: {accent}0A !important; }}
         [data-testid="stFileUploader"] section button {{
             background-color: {accent} !important; 
             color: {accent_text} !important;
+            margin-top: 1rem;
         }}
         
-        /* Fix text elements inside the file uploader for dark mode */
+        /* Fix text elements inside the file uploader */
         [data-testid="stFileUploader"] div, 
         [data-testid="stFileUploader"] span, 
         [data-testid="stFileUploader"] small {{
             color: {text} !important;
         }}
 
-
         /* Expanders & Status */
         .streamlit-expanderHeader, .stStatus {{
             background-color: {card} !important;
             border: 1px solid {card_border} !important;
             color: {text} !important;
+            border-radius: 8px !important;
         }}
         
         /* Alerts (Info, Warning, Success) */
@@ -237,29 +267,40 @@ def apply_adaptive_theme():
             background-color: {card} !important;
             border: 1px solid {card_border} !important;
             color: {text} !important;
+            border-radius: 8px !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }}
 
         /* Hover Cards (Glass) */
         .glass-card {{
             background: {glass};
             backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             border: 1px solid {card_border};
             border-radius: 16px;
             color: {text} !important;
         }}
 
-        /* Global Scrollbars */
-        ::-webkit-scrollbar {{ width: 8px; height: 8px; }}
-        ::-webkit-scrollbar-track {{ background: {bg}; }}
-        ::-webkit-scrollbar-thumb {{ background: {muted}33; border-radius: 10px; }}
-        ::-webkit-scrollbar-thumb:hover {{ background: {muted}66; }}
-
         /* Streamlit Link/Color Override */
-        a {{ color: {accent} !important; }}
+        a {{ color: {accent} !important; text-decoration: none; font-weight: 500; transition: color 0.15s; }}
+        a:hover {{ color: {accent_light} !important; text-decoration: underline; }}
         
         /* Pivot Tables / Dataframes */
         .stDataFrame, [data-testid="stTable"] {{
             background-color: {card} !important;
+            border-radius: 8px;
+            border: 1px solid {card_border};
+            overflow: hidden;
+        }}
+        
+        /* Chat Messages */
+        [data-testid="stChatMessage"] {{
+            background-color: {card} !important;
+            border: 1px solid {card_border} !important;
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
         }}
     </style>
     """
@@ -441,7 +482,7 @@ def render_squad_page(accent):
 
 def render_home_page(accent):
     # --- Top Navigation ---
-    tab_titles = ["🏠 Home", "📝 Resume Studio", "📊 Analytics", "🛡️ AI Review", "💼 Job Intelligence", "🤖 Mock Interview", "📝 Feedback"]
+    tab_titles = ["🏠 Home", "📊 Analytics", "📝 Resume Studio", "🛡️ AI Review", "💼 Job Intelligence", "🤖 Mock Interview", "📝 Feedback"]
     # Ensure current tab index is tracked across page loads (using native streamilt tabs, we must check it explicitly if relying on state)
     st.session_state.active_tab = 0 # Default, though Streamlit handles UI switching
     main_tabs = st.tabs(tab_titles)
@@ -829,7 +870,19 @@ def render_home_page(accent):
             # Display AI Avatar
             col_img, col_txt = st.columns([1, 4])
             with col_img:
-                st.image(r"C:\Users\singh\.gemini\antigravity\brain\b6346e05-751b-495d-9348-a7dce1aaa183\ai_interviewer_avatar_1771688445167.png", use_container_width=True)
+                avatar_url = "https://api.dicebear.com/7.x/bottts/svg?seed=AIAssistant&backgroundColor=2DD4BF"
+                st.markdown(f\"\"\"
+                <style>
+                @keyframes botSpeak {{
+                    0% {{ transform: scale(1) translateY(0px); filter: drop-shadow(0 0 5px rgba(45,212,191,0.5)); }}
+                    50% {{ transform: scale(1.05) translateY(-3px); filter: drop-shadow(0 0 15px rgba(45,212,191,0.8)); }}
+                    100% {{ transform: scale(1) translateY(0px); filter: drop-shadow(0 0 5px rgba(45,212,191,0.5)); }}
+                }}
+                .ai-avatar-container {{ text-align: center; margin-top: -10px;}}
+                .ai-avatar {{ display: inline-block; animation: botSpeak 2s infinite ease-in-out; border-radius: 50%; max-width: 120px; border: 3px solid #2DD4BF; }}
+                </style>
+                <div class='ai-avatar-container'><img src='{avatar_url}' class='ai-avatar' alt='AI Interviewer' /></div>
+                \"\"\", unsafe_allow_html=True)
             with col_txt:
                 st.markdown("**Your AI Interviewer is ready.**")
                 st.caption("🔊 Ensure your sound is on to hear her questions.")
