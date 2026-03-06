@@ -238,13 +238,25 @@ def apply_adaptive_theme():
             border-radius: 12px !important;
             color: {text} !important;
             transition: all 0.2s ease;
-            padding: 2rem !important;
+            padding: 1.5rem !important;
+        }}
+        [data-testid="stFileUploadDropzone"] > div,
+        [data-testid="stFileUploaderDropzone"] > div {{
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 15px !important;
+        }}
+        [data-testid="stFileUploadDropzone"] svg,
+        [data-testid="stFileUploaderDropzone"] svg {{
+            display: none !important;
         }}
         [data-testid="stFileUploader"] section:hover {{ border-color: {accent} !important; background-color: {accent}0A !important; }}
         [data-testid="stFileUploader"] section button {{
             background-color: {accent} !important; 
             color: {accent_text} !important;
-            margin-top: 1rem;
+            margin-top: 0 !important;
         }}
         
         /* Fix text elements inside the file uploader */
@@ -871,7 +883,7 @@ def render_home_page(accent):
             col_img, col_txt = st.columns([1, 4])
             with col_img:
                 avatar_url = "https://api.dicebear.com/7.x/bottts/svg?seed=AIAssistant&backgroundColor=2DD4BF"
-                st.markdown(f\"\"\"
+                st.markdown(f"""
                 <style>
                 @keyframes botSpeak {{
                     0% {{ transform: scale(1) translateY(0px); filter: drop-shadow(0 0 5px rgba(45,212,191,0.5)); }}
@@ -882,7 +894,7 @@ def render_home_page(accent):
                 .ai-avatar {{ display: inline-block; animation: botSpeak 2s infinite ease-in-out; border-radius: 50%; max-width: 120px; border: 3px solid #2DD4BF; }}
                 </style>
                 <div class='ai-avatar-container'><img src='{avatar_url}' class='ai-avatar' alt='AI Interviewer' /></div>
-                \"\"\", unsafe_allow_html=True)
+                """, unsafe_allow_html=True)
             with col_txt:
                 st.markdown("**Your AI Interviewer is ready.**")
                 st.caption("🔊 Ensure your sound is on to hear her questions.")
@@ -939,15 +951,22 @@ def render_home_page(accent):
                     st.divider()
                     st.markdown("### 🎙️ Your Turn to Speak")
                     
-                    # Chat Input for the user. Uses audio_input if available
-                    col_text, col_audio = st.columns([1, 1])
+                    # parallel forms
+                    col_text, col_audio = st.columns([1, 1], gap="medium")
                     
+                    prompt = None
                     with col_text:
-                        prompt = st.chat_input("Type your answer here...")
+                        with st.form("mi_form", clear_on_submit=True, border=True):
+                            t_input = st.text_input("Type your answer here...", placeholder="Type your answer...", label_visibility="collapsed")
+                            submit_text = st.form_submit_button("Send Answer 🚀", use_container_width=True)
+                            if submit_text and t_input.strip():
+                                prompt = t_input.strip()
                         
                     with col_audio:
                         # --- Audio Registration Logic ---
-                        audio_bytes = st.audio_input("Or record your answer")
+                        audio_container = st.container(border=True)
+                        with audio_container:
+                            audio_bytes = st.audio_input("Or record your answer", label_visibility="collapsed")
                     
                     if audio_bytes is not None and getattr(audio_bytes, 'file_id', str(len(audio_bytes.getvalue()))) != st.session_state.get('last_processed_audio_id', ''):
                         # Mark this audio as processed
