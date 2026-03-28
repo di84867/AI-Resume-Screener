@@ -52,6 +52,7 @@ def generate_challenge(candidate_data, jd_text=""):
     
     # Normalize skills to lower case for matching
     skills_lower = [s.lower() for s in skills]
+    jd_lower = jd_text.lower()
     
     challenge_parts = []
     
@@ -67,11 +68,21 @@ def generate_challenge(candidate_data, jd_text=""):
     if not found_tech:
         challenge_parts.append(f"**Level 1: The Audit**\n{random.choice(GENERIC_SCENARIOS)}")
 
-    # 2. System Design / Architecture (Generic but hard)
-    challenge_parts.append("**Level 2: The Architect's Dilemma**\n"
-                           "We need to scale our core service from 10k to 1M Daily Active Users. "
-                           "Our current monolithic SQL database is the bottleneck. Sketch a migration plan to NoSQL or Sharding "
-                           "while maintaining data consistency.")
+    # 2. System Design / Architecture (Based on JD or skills)
+    if "python" in jd_lower or "java" in jd_lower or "backend" in jd_lower:
+        arch_challenge = "We need to scale our core service from 10k to 1M Daily Active Users. Our current monolithic SQL database is the bottleneck. Sketch a migration plan to NoSQL or Sharding while maintaining data consistency."
+    elif "react" in jd_lower or "frontend" in jd_lower:
+        arch_challenge = "Design the architecture for a highly interactive, real-time trading dashboard handling thousands of websocket events per second without crashing the browser."
+    elif "machine learning" in jd_lower or "data science" in jd_lower:
+        arch_challenge = "Design an ML pipeline for real-time fraud detection. How do you handle feature engineering, model serving latency, and CI/CD for model weights?"
+    else:
+        # Fallback to skills
+        if "react" in skills_lower or "javascript" in skills_lower:
+             arch_challenge = "Design the architecture for a highly interactive, real-time dashboard."
+        else:
+             arch_challenge = "We need to scale our core service from 10k to 1M Daily Active Users. Our current monolithic SQL database is the bottleneck."
+
+    challenge_parts.append(f"**Level 2: The Architect's Dilemma**\n{arch_challenge}")
 
     # 3. Behavioral / Culture Check
     challenge_parts.append("**Level 3: The Culture Fit**\n"

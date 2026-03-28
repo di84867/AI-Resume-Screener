@@ -5,6 +5,277 @@ import json
 import os
 from xhtml2pdf import pisa
 
+def generate_txt_resume(data: Dict[str, Any]) -> str:
+    """Generate a clean, single-column plain text resume for ATS."""
+    lines = []
+    
+    # 1. Contact Info
+    name = data.get('name', 'CANDIDATE NAME')
+    lines.append(name.upper())
+    email = data.get('email', 'email@example.com')
+    lines.append(email)
+    lines.append("-" * max(len(name), len(email)))
+    lines.append("")
+    
+    # Get custom headings
+    h = data.get('original_headings', {})
+    
+    # 2. Add sections in ATS-friendly order
+    s_order = data.get('section_order', ['summary', 'experience', 'education'])
+    for core in ['summary', 'experience', 'education']:
+        if core not in s_order: s_order.append(core)
+        
+    seen_sections = set()
+    
+    for sect in s_order:
+        if sect in seen_sections: continue
+        seen_sections.add(sect)
+        
+        if sect == 'summary' and data.get('summary'):
+            lines.append(h.get('summary', 'PROFESSIONAL SUMMARY').upper())
+            lines.append(data.get('summary'))
+            lines.append("")
+            
+        elif sect == 'experience' and data.get('experience'):
+            lines.append(h.get('experience', 'PROFESSIONAL EXPERIENCE').upper())
+            for e in data.get('experience'):
+                lines.append(f"- {e}")
+            lines.append("")
+            
+        elif sect == 'education' and data.get('education'):
+            lines.append(h.get('education', 'EDUCATION').upper())
+            for ed in data.get('education'):
+                lines.append(f"- {ed}")
+            lines.append("")
+            
+    # 3. Skills Always at the End for ATS Parsing
+    if data.get('skills'):
+        lines.append(h.get('skills', 'TECHNICAL SKILLS').upper())
+        lines.append(", ".join(data.get('skills', [])))
+        
+    return "\n".join(lines).strip()
+
+def generate_latex_resume(data: Dict[str, Any]) -> str:
+    """Generate professional LaTeX resume code optimized for parsing and ATS, using the Ramit style."""
+    name = data.get('name', 'CANDIDATE NAME')
+    email = data.get('email', 'email@example.com')
+    phone = data.get('phone', '+91-XXXXXXXXXX')
+    linkedin = data.get('linkedin', 'https://linkedin.com/in/username')
+    
+    h = data.get('original_headings', {})
+    h_sum = h.get('summary', 'Professional Summary')
+    if len(h_sum) > 35: h_sum = 'Professional Summary'
+    
+    h_exp = h.get('experience', 'Experience / Internship')
+    if len(h_exp) > 35: h_exp = 'Experience'
+    
+    h_edu = h.get('education', 'Education')
+    if len(h_edu) > 35: h_edu = 'Education'
+    
+    h_skl = h.get('skills', 'Technical Skills')
+    if len(h_skl) > 35: h_skl = 'Technical Skills'
+
+    def escape_latex(text):
+        if not text: return ""
+        chars = ['&', '%', '$', '#', '_', '{', '}']
+        for c in chars:
+            text = text.replace(c, '\\' + c)
+        return text
+
+    latex_code = [
+        r"\documentclass[11pt,a4paper]{article}",
+        r"",
+        r"\usepackage[utf8]{inputenc}",
+        r"\usepackage[T1]{fontenc}",
+        r"\usepackage[margin=0.4in]{geometry}",
+        r"\usepackage{hyperref}",
+        r"\usepackage{titlesec}",
+        r"\usepackage{enumitem}",
+        r"\usepackage{xcolor}",
+        r"",
+        r"% --- Custom Styling ---",
+        r"\hypersetup{",
+        r"    colorlinks=true,",
+        r"    linkcolor=blue,",
+        r"    filecolor=magenta,      ",
+        r"    urlcolor=black,",
+        r"}",
+        r"",
+        r"\titleformat{\section}{\bfseries\large\uppercase}{}{0pt}{}[\titlerule]",
+        r"\titlespacing*{\section}{0pt}{1.5ex}{1ex}",
+        r"",
+        r"\setlist[itemize]{noitemsep, partopsep=0pt, topsep=0pt, leftmargin=1.5em}",
+        r"",
+        r"\newcommand{\header}[4]{",
+        r"    \begin{center}",
+        r"        {\Huge \textbf{#1}} \\",
+        r"        \vspace{2pt}",
+        r"        \small #2 $|$ \href{mailto:#3}{#3} $|$ \href{#4}{LinkedIn}",
+        r"    \end{center}",
+        r"}",
+        r"",
+        r"% --- Document Content ---",
+        r"\begin{document}",
+        r"",
+        f"\\header{{{escape_latex(name)}}}{{{escape_latex(phone)}}}{{{escape_latex(email)}}}{{{escape_latex(linkedin)}}}",
+        r""
+    ]
+    
+    import re
+
+    def split_right_aligned(text):
+        # Tries to find Dates or Locations at the end of the string to right-align them
+        # Regex looks for patterns like: " Expected June 2026", " 2022 - 2026", " Jan 2022", " Bareilly, India"
+        match = re.search(r'\s+((?:Expected\s)?(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s\d{4}.*|\d{4}\s*-\s*\d{4}.*|(?:Expected\s)?\d{4}|[A-Za-z]+,\s[A-Za-z]+)$', text, re.IGNORECASE)
+        if match:
+            left = text[:match.start()].strip()
+            right = match.group(1).strip()
+            return left, right
+        return text, ""
+
+    s_order = data.get('section_order', ['summary', 'experience', 'education'])
+    for core in ['summary', 'experience', 'education', 'skills']:
+        if core not in s_order: s_order.append(core)
+        
+    seen = set()
+    for sect in s_order:
+        if sect in seen: continue
+        seen.add(sect)
+        
+        if sect == 'summary' and data.get('summary'):
+            summary_text = data.get('summary')
+            latex_code.append(f"\\section{{{escape_latex(h_sum)}}}")
+            latex_code.append(r"\noindent")
+            latex_code.append(escape_latex(summary_text))
+            latex_code.append("")
+        
+        elif sect == 'education' and data.get('education'):
+            latex_code.append(f"\\section{{{escape_latex(h_edu)}}}")
+            in_itemize = False
+            for ed in data.get('education'):
+                ed = ed.strip()
+                if not ed: continue
+                
+                if ed.startswith('-') or ed.startswith('•'):
+                    clean_bullet = escape_latex(ed.lstrip('-• ').strip())
+                    if not in_itemize:
+                        latex_code.append(r"\vspace{-1ex}")
+                        latex_code.append(r"\begin{itemize}")
+                        in_itemize = True
+                    latex_code.append(f"    \\item {clean_bullet}")
+                else:
+                    if in_itemize:
+                        latex_code.append(r"\end{itemize}")
+                        latex_code.append(r"\vspace{1ex}")
+                        in_itemize = False
+                        
+                    parts = [p.strip() for p in ed.split('|')]
+                    school_raw = parts[0].lstrip('-• ').strip() if len(parts) > 0 else ""
+                    
+                    if len(parts) > 1:
+                        school = escape_latex(school_raw)
+                        degree = escape_latex(parts[1]) 
+                        date = escape_latex(parts[2]) if len(parts) > 2 else ""
+                        latex_code.append(r"\noindent")
+                        latex_code.append(f"\\textbf{{{school}}} \\hfill {date} \\\\")
+                        latex_code.append(f"\\textit{{{degree}}}")
+                        if len(parts) > 3:
+                            latex_code.append(r"\vspace{0.5ex}")
+                            latex_code.append(r"\begin{itemize}")
+                            for extra in parts[3:]:
+                                if extra.strip():
+                                    latex_code.append(f"    \\item {escape_latex(extra.strip())}")
+                            latex_code.append(r"\end{itemize}")
+                            latex_code.append(r"\vspace{1ex}")
+                        else:
+                            latex_code.append(r"\vspace{1ex}")
+                    else:
+                        # Smart heuristic fallback
+                        left, right = split_right_aligned(school_raw)
+                        latex_code.append(r"\noindent")
+                        if "School" in left or "University" in left or "Board" in left or "College" in left:
+                            latex_code.append(f"\\textbf{{{escape_latex(left)}}} \\hfill \\textit{{{escape_latex(right)}}} \\\\")
+                        else:
+                            latex_code.append(f"\\textit{{{escape_latex(left)}}} \\hfill \\textit{{{escape_latex(right)}}} \\\\")
+                        latex_code.append(r"\vspace{1ex}")
+                        
+            if in_itemize:
+                latex_code.append(r"\end{itemize}")
+                latex_code.append(r"\vspace{1ex}")
+            latex_code.append("")
+        
+        elif sect == 'experience' and data.get('experience'):
+            latex_code.append(f"\\section{{{escape_latex(h_exp)}}}")
+            in_itemize = False
+            
+            for item in data.get('experience'):
+                item = item.strip()
+                if not item: continue
+                
+                if item.startswith('-') or item.startswith('•'):
+                    clean_bullet = escape_latex(item.lstrip('-• ').strip())
+                    if not in_itemize:
+                        latex_code.append(r"\vspace{-1ex}")
+                        latex_code.append(r"\begin{itemize}")
+                        in_itemize = True
+                    latex_code.append(f"    \\item {clean_bullet}")
+                else:
+                    if in_itemize:
+                        latex_code.append(r"\end{itemize}")
+                        latex_code.append(r"\vspace{1ex}")
+                        in_itemize = False
+                        
+                    parts = [p.strip() for p in item.split('|')]
+                    company_raw = parts[0] if len(parts) > 0 else "Experience"
+                    
+                    if len(parts) == 1:
+                        left, right = split_right_aligned(company_raw)
+                        latex_code.append(r"\noindent")
+                        latex_code.append(f"\\textbf{{{escape_latex(left)}}} \\hfill \\textit{{{escape_latex(right)}}} \\\\")
+                        latex_code.append(r"\vspace{1ex}")
+                    else:
+                        company = escape_latex(company_raw)
+                        role_raw = parts[1] if len(parts) > 1 else ""
+                        left, right = split_right_aligned(role_raw)
+                        
+                        role = escape_latex(left)
+                        if len(parts) > 2:
+                            date = escape_latex(parts[2]) 
+                        else:
+                            date = escape_latex(right)
+                        
+                        latex_code.append(r"\noindent")
+                        latex_code.append(f"\\textbf{{{company}}} $|$ \\textit{{{role}}} \\hfill \\textit{{{date}}}")
+                        
+                        if len(parts) > 3:
+                            latex_code.append(r"\vspace{0.5ex}")
+                            latex_code.append(r"\begin{itemize}")
+                            for bullet in parts[3:]:
+                                if bullet.strip():
+                                    latex_code.append(f"    \\item {escape_latex(bullet.strip())}")
+                            latex_code.append(r"\end{itemize}")
+                            latex_code.append(r"\vspace{1ex}")
+                        else:
+                            latex_code.append(r"\vspace{1ex}")
+                            
+            if in_itemize:
+                latex_code.append(r"\end{itemize}")
+                latex_code.append(r"\vspace{1ex}")
+            latex_code.append("")
+            
+        elif sect == 'skills' and data.get('skills'):
+            latex_code.append(f"\\section{{{escape_latex(h_skl)}}}")
+            latex_code.append(r"\begin{itemize}")
+            skills = [escape_latex(s) for s in data.get('skills', [])]
+            if len(skills) > 0:
+                latex_code.append(f"    \\item \\textbf{{Core Competencies:}} {', '.join(skills)}")
+            latex_code.append(r"\end{itemize}")
+            latex_code.append("")
+            
+    latex_code.append(r"\end{document}")
+    
+    return "\n".join(latex_code)
+
 TEMPLATE_FILE = "src/templates_registry.json"
 
 def get_default_templates():
@@ -75,7 +346,10 @@ def suggest_improvements(resume_features: Dict[str, Any], job_desc_text: str) ->
     suggestions = {'missing_skills': [], 'recommended_actions': [], 'section_improvements': {}}
     jd_lower = job_desc_text.lower()
     resume_skills = [s.lower() for s in resume_features.get('skills', [])]
-    common_tech_keywords = ["python", "java", "sql", "machine learning", "nlp", "aws", "docker", "kubernetes", "react"]
+    common_tech_keywords = ["python", "java", "c++", "javascript", "typescript", "html", "css", "react", "angular", "vue", "node.js", 
+    "sql", "nosql", "postgresql", "mongodb", "redis", "aws", "azure", "gcp", "docker", "kubernetes",
+    "machine learning", "deep learning", "nlp", "tensorflow", "pytorch", "pandas", "numpy", "power bi", "tableau", 
+    "agile", "scrum", "communication", "leadership"]
     for keyword in common_tech_keywords:
         if keyword in jd_lower and keyword not in resume_skills:
             suggestions['missing_skills'].append(keyword)

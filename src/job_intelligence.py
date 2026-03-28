@@ -78,16 +78,18 @@ def generate_search_links(candidate_data):
         })
     return links, query_base
 
-def suggest_roles(skills):
+def suggest_roles(skills, jd_text=""):
     # Map common skill sets to likely roles
     roles = []
     s_lower = [s.lower() for s in skills]
+    jd_lower = jd_text.lower() if jd_text else ""
     
-    if any(x in s_lower for x in ['python', 'django', 'flask', 'fastapi']): roles.append("Backend Developer")
-    if any(x in s_lower for x in ['react', 'angular', 'vue', 'html', 'css']): roles.append("Frontend Developer")
-    if any(x in s_lower for x in ['machine learning', 'nlp', 'pytorch', 'tensorflow']): roles.append("AI/ML Engineer")
-    if any(x in s_lower for x in ['aws', 'azure', 'docker', 'kubernetes']): roles.append("DevOps Engineer")
-    if any(x in s_lower for x in ['sql', 'postgresql', 'tableau', 'pandas']): roles.append("Data Analyst")
+    if any(x in s_lower for x in ['python', 'django', 'flask', 'fastapi']) or "backend" in jd_lower or "python" in jd_lower: roles.append("Backend Developer")
+    if any(x in s_lower for x in ['react', 'angular', 'vue', 'html', 'css']) or "frontend" in jd_lower or "react" in jd_lower: roles.append("Frontend Developer")
+    if any(x in s_lower for x in ['machine learning', 'nlp', 'pytorch', 'tensorflow']) or "machine learning" in jd_lower: roles.append("AI/ML Engineer")
+    if any(x in s_lower for x in ['aws', 'azure', 'docker', 'kubernetes']) or "devops" in jd_lower: roles.append("DevOps Engineer")
+    if any(x in s_lower for x in ['sql', 'postgresql', 'tableau', 'pandas']) or "data analyst" in jd_lower: roles.append("Data Analyst")
+    if "full stack" in jd_lower or "fullstack" in jd_lower: roles.append("Full Stack Developer")
     
     if not roles: roles = ["Software Development Engineer"]
     return list(set(roles))

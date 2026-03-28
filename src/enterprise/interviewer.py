@@ -43,10 +43,27 @@ def render_interviewer_module():
                 if st.button("Analyze Call Transcript"):
                     st.success("Analysis Complete")
                     st.markdown("""
-                    **Candidate Score: 8.5/10**
-                    - **Communication:** Clear and confident.
-                    - **Technical Accuracy:** Correctly explained decorators and wrappers.
+                    ### 📊 Performance Analysis
+                    **Overall Score: 8.5/10**
+                    - **Communication:** Clear, confident, and articulate.
+                    - **Technical Accuracy:** Correctly explained decorators and closures.
                     - **Red Flags:** None detected.
+                    
+                    ---
+                    
+                    ### 🚀 Feedback & Growth Roadmap
+                    
+                    #### 💻 Technical Growth Areas
+                    - **System Design**: While your coding logic is strong, focus on explaining how components scale (e.g., Load balancing for Python APIs).
+                    - **Concurrency**: Deep dive into `asyncio` and `Multiprocessing` to handle CPU-bound tasks in Python.
+                    
+                    #### 🗣️ Soft Skill Refinement
+                    - **The STAR Method**: Structure your behavioral answers better (Situation, Task, Action, Result).
+                    - **Clarity of Thought**: Practice summarizing complex concepts in under 60 seconds (The "Elevator Pitch").
+                    
+                    #### 💡 Pro Interview Tips
+                    - **Research the Stack**: Before the next round, look up the company's tech blog to see their specific implementation challenges.
+                    - **Ask Smart Questions**: Prepare 3-4 deep technical questions about their architecture to show you are thinking long-term.
                     """)
 
     with tabs[1]:

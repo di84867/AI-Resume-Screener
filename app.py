@@ -10,7 +10,8 @@ from src.utils import validate_inputs, save_to_csv
 from src.resume_editor import (
     suggest_improvements, generate_html_resume, optimize_summary, 
     convert_html_to_pdf, get_templates, save_user_template, 
-    get_default_templates, delete_user_template
+    get_default_templates, delete_user_template, generate_txt_resume, 
+    generate_latex_resume
 )
 from src.anonymizer import anonymize_candidate, apply_blind_mode
 from src.visualizations import create_skill_network
@@ -132,49 +133,59 @@ def apply_adaptive_theme():
         /* --- UI Widgets --- */
         /* Buttons - Deep CSS overrides */
         .stButton>button, div[data-baseweb="button"], .stDownloadButton>button, .stLinkButton>a {{
-            background: {accent} !important;
+            background: linear-gradient(135deg, {accent}, {accent_light}) !important;
             color: {accent_text} !important;
             border: none !important;
-            border-radius: 8px !important;
+            border-radius: 10px !important;
             font-weight: 600 !important;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            letter-spacing: 0.03em;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
             text-decoration: none !important;
             display: flex;
             justify-content: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }}
         .stButton>button:hover, div[data-baseweb="button"]:hover, .stDownloadButton>button:hover, .stLinkButton>a:hover {{
-            transform: translateY(-2px);
-            background: {accent_light} !important;
-            box-shadow: 0 6px 15px {accent}55 !important;
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 8px 24px {accent}66 !important;
         }}
         
         /* Container/Cards */
         div[data-testid="stVerticalBlock"] > div[style*="border"] {{
             background-color: {card} !important;
             border-color: {card_border} !important;
-            border-radius: 12px !important;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            padding: 1rem;
+            border-radius: 16px !important;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.04);
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }}
+        div[data-testid="stVerticalBlock"] > div[style*="border"]:hover {{
+            box-shadow: 0 12px 32px rgba(0,0,0,0.08);
+            transform: translateY(-2px);
         }}
 
         /* Expander headers and text */
         .streamlit-expanderHeader, .streamlit-expanderHeader p {{ 
             color: {text} !important;
             font-weight: 600 !important;
+            transition: color 0.2s ease;
+        }}
+        .streamlit-expanderHeader:hover p {{
+            color: {accent} !important;
         }}
 
         /* Inputs (Text, Area, Number, Select) */
         .stTextInput input, .stTextArea textarea, .stNumberInput input, .stSelectbox [data-baseweb="select"] {{
             background-color: {bg} !important;
-            border: 1px solid {card_border} !important;
-            border-radius: 8px !important;
+            border: 2px solid {card_border} !important;
+            border-radius: 10px !important;
             color: {text} !important;
-            transition: border-color 0.2s ease;
+            transition: all 0.3s ease;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
         }}
-        .stTextInput input:focus, .stTextArea textarea:focus {{
+        .stTextInput input:focus, .stTextArea textarea:focus, .stSelectbox [data-baseweb="select"]:focus-within {{
             border-color: {accent} !important;
-            box-shadow: 0 0 0 2px {accent}33 !important;
+            box-shadow: 0 0 0 3px {accent}33 !important;
         }}
 
         /* Dropdowns & Popovers (Selectbox lists) */
@@ -191,23 +202,29 @@ def apply_adaptive_theme():
         div[data-baseweb="popover"] li:hover {{
             background-color: {accent}22 !important;
             color: {accent} !important;
+            font-weight: 600;
         }}
 
         /* Checkboxes, Radios, Toggles */
         .stCheckbox label, .stRadio label {{ color: {text} !important; }}
-        .stCheckbox div[role="checkbox"] {{ background-color: {card} !important; border-color: {card_border} !important;}}
-        .stCheckbox div[role="checkbox"][aria-checked="true"] {{ background-color: {accent} !important; border-color: {accent} !important;}}
-        div[data-testid="stWidgetLabel"] p {{ color: {muted} !important; font-weight: 500; font-size: 0.85rem !important; text-transform: uppercase; letter-spacing: 0.05em;}}
+        .stCheckbox div[role="checkbox"] {{ background-color: {card} !important; border-color: {card_border} !important; transition: all 0.2s; }}
+        .stCheckbox div[role="checkbox"][aria-checked="true"] {{ background-color: {accent} !important; border-color: {accent} !important; transform: scale(1.05); }}
+        div[data-testid="stWidgetLabel"] p {{ color: {muted} !important; font-weight: 600; font-size: 0.85rem !important; text-transform: uppercase; letter-spacing: 0.05em;}}
         
         /* Metric Cards */
         div[data-testid="metric-container"] {{
-            background: {card} !important;
+            background: linear-gradient(145deg, {card}, {bg}) !important;
             border: 1px solid {card_border} !important;
-            border-radius: 12px !important;
-            padding: 1rem !important;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border-radius: 16px !important;
+            padding: 1.5rem !important;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }}
-        [data-testid="stMetricValue"] {{ color: {accent} !important; font-weight: 700 !important; }}
+        div[data-testid="metric-container"]:hover {{
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.1);
+        }}
+        [data-testid="stMetricValue"] {{ color: {accent} !important; font-weight: 800 !important; font-size: 2rem !important; }}
 
         /* Tabs */
         .stTabs [data-baseweb="tab-list"] {{
@@ -318,6 +335,19 @@ def apply_adaptive_theme():
     """
     st.markdown(css, unsafe_allow_html=True)
 
+import urllib.parse
+import requests
+
+def compile_latex_to_pdf(latex_code: str) -> bytes:
+    """Simulate Overleaf cloud compilation by using a public LaTeX-to-PDF API."""
+    try:
+        url = "https://latexonline.cc/compile?text=" + urllib.parse.quote(latex_code)
+        req = requests.get(url, timeout=45)
+        if req.status_code == 200:
+            return req.content
+    except Exception as e:
+        pass
+    return b""
 
 # --- 4. Logic & Helpers ---
 @st.cache_resource
@@ -339,6 +369,12 @@ def trigger_analysis(files, jd):
                 with open(os.path.join(LIB_DIR, sf), "rb") as f: all_ops.append((sf, f.read()))
         if files:
             for f in files: all_ops.append((f.name, f.getvalue()))
+        
+        if not all_ops:
+            st.error("⚠️ No PDFs uploaded and no system resumes found.")
+            status.update(label="Scanning Failed", state="error")
+            return
+
         # Custom Logic: Store filename separately if needed, but d_map key is filename-based.
         # But we want to preserve the filename for the graph if name extraction fails or is generic.
         for name_orig, content in all_ops:
@@ -357,6 +393,7 @@ def trigger_analysis(files, jd):
             d_map[name_file] = feats
         st.session_state.processed_data = d_map
         st.session_state.rankings = rank_candidates(d_map, jd)
+        st.session_state.jd_text = jd
         status.update(label="Scanning Complete", state="complete")
         st.rerun()
 
@@ -543,7 +580,12 @@ def render_home_page(accent):
             st.divider()
             m_cols = st.columns(3)
             best_c = display_rankings[0]
-            m_cols[0].metric("🥇 RANK 1 MATCH", f"{best_c[1]:.0%}")
+            
+            # Use safe get just in case ranking returns features without these properties (e.g. legacy data)
+            best_feat = best_c[2] if len(best_c) > 2 else {}
+            v_label = best_feat.get('ats_validation', 'Unknown')
+            
+            m_cols[0].metric("🥇 RANK 1 MATCH", f"{best_c[1]:.0%}", v_label)
             m_cols[1].metric("👥 VETTED COHORT", f"{len(display_rankings)} Profiles")
             m_cols[2].metric("✨ IQ FIDELITY", "98.4%")
             
@@ -611,7 +653,7 @@ def render_home_page(accent):
 
             # Filtering logic - Strictly enforce photo vs text-only templates
             all_temps = get_templates()
-            f_temps = {k: v for k, v in all_temps.items() if v.get('has_photo') == is_visual}
+            f_temps = {k: v for k, v in all_temps.items() if v.get('has_photo', False) == is_visual}
             
             # Auto-correction: If current template doesn't match the mode, switch to the first valid one
             current_t_config = all_temps.get(st.session_state.selected_template, {})
@@ -675,15 +717,9 @@ def render_home_page(accent):
                     # Custom Headings Editor
                     st.caption("Customize Section Headers (e.g., 'Work History' vs 'Experience')")
                     h_sum_ed = st.text_input("Summary Header", c_data.get('original_headings', {}).get('summary', 'Professional Summary'), key="h_sum")
-                    h_exp_ed = st.text_input("Experience Header", c_data.get('original_headings', {}).get('experience', 'Experience'), key="h_exp")
+                    h_exp_ed = st.text_input("Experience Header", c_data.get('original_headings', {}).get('experience', 'Professional Experience'), key="h_exp")
                     h_edu_ed = st.text_input("Education Header", c_data.get('original_headings', {}).get('education', 'Education'), key="h_edu")
-                    
-                    if 'original_headings' not in c_data: c_data['original_headings'] = {}
-                    c_data['original_headings'].update({
-                        'summary': h_sum_ed,
-                        'experience': h_exp_ed,
-                        'education': h_edu_ed
-                    })
+                    h_skl_ed = st.text_input("Skills Header", c_data.get('original_headings', {}).get('skills', 'Technical Skills'), key="h_skl")
                 
                 with st.expander("📝 Professional Narrative", expanded=False):
                     n_s = st.text_area("Impact Statement", c_data.get('summary', ""), height=150)
@@ -697,7 +733,7 @@ def render_home_page(accent):
                     n_sk = st.text_area("Skillset Registry", ", ".join(c_data.get('skills', [])), height=100)
                 
                 with st.expander("💼 Professional Track Record", expanded=False):
-                    st.caption("Enter each bullet point on a new line")
+                    st.markdown("**ATS Format:** `Company | Role | Date` (New heading)\\n`- Bullet point` (Bullet)")
                     n_ex = st.text_area("Impact Evidence", "\n".join(c_data.get('experience', [])), height=200)
                     if st.button("⚡ Enhance with Action Verbs", key="enhance_btn"):
                         # Simple rule-based enhancement
@@ -708,9 +744,9 @@ def render_home_page(accent):
                             if line.strip():
                                 # Check if line starts with weak verb (heuristic) or just prepend
                                 # For demo, we randomly prepend strong verbs to some lines if they are short
-                                if len(line.split()) < 10 and not any(v in line for v in action_verbs):
+                                if len(line.split()) < 10 and not any(v in line for v in action_verbs) and line.strip().startswith("-"):
                                     v = random.choice(action_verbs)
-                                    enhanced_lines.append(f"{v} successful execution of: {line}")
+                                    enhanced_lines.append(f"- {v} successful execution of: {line.lstrip('- ')}")
                                 else:
                                     enhanced_lines.append(line)
                         n_ex = "\n".join(enhanced_lines)
@@ -718,7 +754,7 @@ def render_home_page(accent):
                         st.rerun()
                 
                 with st.expander("🎓 Academic Qualifications", expanded=False):
-                    st.caption("Degrees and certifications (one per line)")
+                    st.markdown("**ATS Format:** `School | Degree | Date`")
                     n_ed = st.text_area("Registry of Credentials", "\n".join(c_data.get('education', [])), height=150)
                 
                 if st.button("🚀 DEPLOY CHANGES TO CANVAS", use_container_width=True, type="primary"):
@@ -729,6 +765,13 @@ def render_home_page(accent):
                         'experience': [e.strip() for e in n_ex.split("\n") if e.strip()],
                         'education': [e.strip() for e in n_ed.split("\n") if e.strip()]
                     })
+                    if 'original_headings' not in c_data: c_data['original_headings'] = {}
+                    c_data['original_headings'].update({
+                        'summary': h_sum_ed,
+                        'experience': h_exp_ed,
+                        'education': h_edu_ed,
+                        'skills': h_skl_ed
+                    })
                     st.toast("Intelligence updated.")
                     st.rerun()
 
@@ -736,8 +779,79 @@ def render_home_page(accent):
                 st.markdown("### 📄 Real-Time Master Canvas")
                 p_html = generate_html_resume(c_data, st.session_state.selected_template, for_pdf=False)
                 st.components.v1.html(p_html, height=850, scrolling=True)
-                pdf_b = convert_html_to_pdf(generate_html_resume(c_data, st.session_state.selected_template, for_pdf=True))
-                if pdf_b: st.download_button("📥 EXPORT MASTER PDF", data=pdf_b, file_name=f"Master_{n_n}.pdf", mime="application/pdf", use_container_width=True)
+                
+                with st.expander("🔑 JD Keyword Optimizer", expanded=True):
+                    if st.session_state.rankings:
+                        st.info("Ensure you are extracting maximum ATS matches by reviewing the below missing skills.")
+                        st.write("We detected that these skills might be highly sought out by the role based on job descriptions:")
+                        
+                        jd_text = st.session_state.get('jd_text', "")
+                        suggestions = suggest_improvements(c_data, jd_text)
+                        
+                        missing_skills = suggestions.get('missing_skills', [])
+                        
+                        if len(missing_skills) > 0:
+                            st.warning("Consider incorporating these into your bullet points:")
+                            for ms in missing_skills:
+                                st.markdown(f"- **{ms}**")
+                        else:
+                            st.success("Your resume covers key common industry keywords nicely!")
+                    else:
+                        st.warning("Please do a Neural Scan on the home tab to enable Keyword Optimization.")
+
+                st.markdown("### ☁️ Overleaf-Style ATS Exports & IDE")
+                st.caption("Generate and manually edit highly-structured, perfectly indented LaTeX code.")
+                
+                state_key = f"latex_editor_{sel_name}"
+                
+                col_actions = st.columns([1, 1])
+                with col_actions[0]:
+                    if st.button("🔄 Regenerate Base LaTeX Code", use_container_width=True, help="Overwrites manual edits with fresh data from the left panel."):
+                        st.session_state[state_key] = generate_latex_resume(c_data)
+                        st.rerun()
+                        
+                if state_key not in st.session_state:
+                    st.session_state[state_key] = generate_latex_resume(c_data)
+                
+                pdf_key = f'compiled_pdf_{n_n}'
+                source_key = f'compiled_latex_source_{n_n}'
+                
+                # Make Parallel Left-Right layout
+                ide_col, preview_col = st.columns([1, 1], gap="small")
+                
+                with ide_col:
+                    # The Overleaf Studio IDE text area
+                    # We use a separate key for the widget to prevent Streamlit from fighting manual updates if we re-assign session state
+                    edited_latex_code = st.text_area(
+                        "LaTeX Source Code", 
+                        value=st.session_state[state_key], 
+                        height=600,
+                        key=f"{state_key}_widget"
+                    )
+                    st.download_button("📥 DOWNLOAD .TEX SOURCE", data=edited_latex_code, file_name=f"Resume_{n_n}.tex", mime="text/plain", use_container_width=True)
+                    txt_b = generate_txt_resume(c_data)
+                    st.download_button("📋 DEFAULT ATS .TXT FORMAT", data=txt_b.encode('utf-8'), file_name=f"ATS_{n_n}.txt", mime="text/plain", use_container_width=True)
+
+                # Auto-compile and Sync edits back to state
+                if edited_latex_code != st.session_state[state_key] or source_key not in st.session_state:
+                    st.session_state[state_key] = edited_latex_code
+                    with preview_col:
+                        with st.spinner("Compiling Live Preview via LaTeX Cloud servers..."):
+                            pdf_b = compile_latex_to_pdf(edited_latex_code)
+                            if pdf_b:
+                                st.session_state[pdf_key] = pdf_b
+                                st.session_state[source_key] = edited_latex_code
+                            else:
+                                if source_key not in st.session_state:
+                                    st.error("Cloud engine currently busy. Live preview unavailable.")
+                
+                with preview_col:
+                    if pdf_key in st.session_state:
+                        st.markdown("#### 👁️ Live PDF Preview")
+                        base64_pdf = base64.b64encode(st.session_state[pdf_key]).decode('utf-8')
+                        pdf_display = f'<embed src="data:application/pdf;base64,{base64_pdf}" width="100%" height="520" type="application/pdf" style="border-radius: 8px; border: 1px solid #e2e8f0;"></embed>'
+                        st.markdown(pdf_display, unsafe_allow_html=True)
+                        st.download_button("📥 DOWNLOAD HIGH-RES PDF", data=st.session_state[pdf_key], file_name=f"Professional_ATS_{n_n}.pdf", mime="application/pdf", use_container_width=True, type="primary")
 
     # --- TAB 4: INTERVIEW INTEL ---
     with main_tabs[3]:
@@ -769,21 +883,17 @@ def render_home_page(accent):
                 st.subheader("📚 Personalized Learning Path")
                 st.info(f"Based on gaps between the Candidate and JD, here is a curated valid study plan.")
                 
-                # Simple logic: Extract keywords from JD that are missing in Candidate Skills
-                # For now, we simulate this based on standard tech stacks
-                missing_tech = []
-                jd_lower = jd_text.lower() if 'jd_text' in locals() else "" # Context check, need to pass JD text globally or store in session
-                # Fallback since we don't have JD text here easily accessible in this scope without refactoring main
-                # We can deduce from the "Performance Optimization" section logic if we had it.
-                # Let's just recommend advanced adjacent skills for now.
+                jd_text = st.session_state.get('jd_text', "")
+                suggestions = suggest_improvements(iq_d, jd_text)
+                missing_tech = suggestions.get('missing_skills', [])
                 
-                rec_skills = ["System Design", "Cloud Architecture (AWS/Azure)", "GraphQL", "Microservices Patterns"]
-                cols = st.columns(len(rec_skills))
+                rec_skills = missing_tech[:4] if missing_tech else ["System Design", "Cloud Architecture", "Advanced " + (iq_d.get('skills', ['Programming'])[0] if iq_d.get('skills') else 'Programming')]
+                cols = st.columns(len(rec_skills) if rec_skills else 1)
                 for idx, rs in enumerate(rec_skills):
                     with cols[idx]:
-                         st.markdown(f"**{rs}**")
-                         st.caption("Recommended for Senior Roles")
-                         st.markdown(f"[Study {rs}](https://www.google.com/search?q={rs.replace(' ', '+')}+course)")
+                         st.markdown(f"**{rs.title()}**")
+                         st.caption("Recommended for this role")
+                         st.markdown(f"[Study {rs.title()}](https://www.google.com/search?q={rs.replace(' ', '+')}+course)")
             
             with rep_col2:
                 with st.container(border=True):
@@ -794,18 +904,30 @@ def render_home_page(accent):
 
             st.divider()
             st.subheader("📈 Performance Optimization")
-            st.warning("**Skill Gap Alert**: Your profile may be perceived as low in 'Leadership' or 'Project Management' based on the JD. Prepare to discuss 'Informal Leadership' examples.")
-            st.success("**High Match Strength**: Your experience with technical architecture aligns perfectly. Lead with these 'Power Skills' early in the conversation.")
+            missing_for_perf = suggest_improvements(iq_d, st.session_state.get('jd_text', '')).get('missing_skills', [])
+            strong_skills = iq_d.get('skill_matches', [])
+            if not strong_skills and iq_d.get('skills'):
+                 strong_skills = iq_d.get('skills')[:3]
+                
+            if missing_for_perf:
+                 st.warning(f"**Skill Gap Alert**: Your profile may be perceived as low in '{missing_for_perf[0].title()}' or '{missing_for_perf[1].title() if len(missing_for_perf) > 1 else 'Project Management'}' based on the JD. Prepare to discuss 'Informal Leadership' examples.")
+            else:
+                 st.warning("**Skill Gap Alert**: Ensure to highlight measurable impacts in your previous roles.")
+                 
+            if strong_skills:
+                 st.success(f"**High Match Strength**: Your experience with {', '.join([s.title() for s in strong_skills[:2]])} perfectly aligns. Lead with these 'Power Skills' early in the conversation.")
+            else:
+                 st.success("**High Match Strength**: Your experience perfectly aligns. Lead with these 'Power Skills' early in the conversation.")
 
             st.divider()
             st.subheader("🔥 The Gauntlet: Simulation")
             st.markdown("Generate a high-intensity case study to test this candidate's actual depth.")
             if st.button("GENERATE GAUNTLET CHALLENGE", icon="⚔️", use_container_width=True):
-                challenge = generate_challenge(iq_d)
+                challenge = generate_challenge(iq_d, st.session_state.get('jd_text', ''))
                 with st.container(border=True):
                     st.markdown(f"### 🛡️ Mission Dossier: {iq_n}")
                     st.markdown(challenge)
-                    st.warning("⚠️ This scenario is generated based on claimed skills. Use it to verify depth.")
+                    st.warning("⚠️ This scenario is generated based on claimed skills and the job description. Use it to verify depth.")
 
     # --- TAB 5: JOB INTELLIGENCE ---
     with main_tabs[4]:
@@ -819,7 +941,7 @@ def render_home_page(accent):
             st.markdown(f"### 🛡️ Mission Opportunities for **{ji_n}**")
             
             # 1. Suggested Career Paths
-            roles = suggest_roles(ji_d.get('skills', []))
+            roles = suggest_roles(ji_d.get('skills', []), st.session_state.get('jd_text', ''))
             st.write("**Recommended Paths based on DNA:**")
             r_cols = st.columns(len(roles))
             for i, r in enumerate(roles):

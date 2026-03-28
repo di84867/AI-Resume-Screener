@@ -106,10 +106,10 @@ def extract_features(text: str, nlp: Language) -> dict[str, Any]:
             
             # Check if this line is a heading
             l_clean = line.strip().lower()
-            if len(l_clean) < 40:
+            if 0 < len(l_clean) < 50 and not l_clean.endswith(".") and not l_clean.startswith("-") and not l_clean.startswith("•"):
                 is_heading = False
                 for k in keyword_to_type:
-                    if k == l_clean or (l_clean.startswith(k) and len(l_clean) < len(k) + 3):
+                    if k in l_clean:
                         stype = keyword_to_type[k]
                         if stype not in sections: # Only catch first occurrence as heading
                             if current_stype:
@@ -151,8 +151,8 @@ def extract_features(text: str, nlp: Language) -> dict[str, Any]:
     # Format Experience and Education into lists for the template bullets
     def to_bullets(txt):
         if not txt: return []
-        # Split by newline or common bullet chars
-        lines = [line.strip().lstrip('•*-').strip() for line in txt.split('\n') if line.strip()]
+        # Split by newline but retain bullet characters for downstream parsing
+        lines = [line.strip() for line in txt.split('\n') if line.strip()]
         return lines
 
     return {

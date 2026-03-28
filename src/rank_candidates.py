@@ -43,8 +43,22 @@ def rank_candidates(resume_data: dict[str, dict[str, Any]], job_description: str
         
         final_score = base_score + skill_boost
         
+        # Validation mapping
+        percentage_score = min(int(final_score * 100), 100)
+        if percentage_score >= 80:
+            validation_label = 'Excellent Match'
+        elif percentage_score >= 60:
+            validation_label = 'Good Match'
+        elif percentage_score >= 40:
+            validation_label = 'Average Match'
+        else:
+            validation_label = 'Low Match'
+            
+        
         # Update features with match info for UI
         features['skill_matches'] = list(set(skill_matches))
+        features['ats_validation'] = validation_label
+        features['ats_score_percentage'] = percentage_score
         features['score_breakdown'] = {
             'Text Similarity': f"{base_score:.2f}",
             'Skill Boost': f"{skill_boost:.2f} ({match_count} matches)"

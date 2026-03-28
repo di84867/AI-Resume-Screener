@@ -6,3 +6,7 @@ pandas
 numpy
 plotly
 xhtml2pdf
+pytz
+gTTS
+requests
+networkx

@@ -7,10 +7,6 @@ from datetime import datetime
 
 def validate_inputs(uploaded_files, job_desc: str) -> bool:
     """Validate user inputs."""
-    pass # logic in app directly often easier for UI feedback, but keeping valid
-    if not uploaded_files:
-        st.warning("⚠️ Please upload at least one PDF resume.")
-        return False
     if not job_desc.strip():
         st.warning("⚠️ Please enter a job description.")
         return False
