@@ -5,6 +5,10 @@ services:
       - "8501:8501"
     volumes:
       - .:/app
+      # Anonymous volumes to exclude heavy directories from the bind mount
+      - /app/.venv
+      - /app/.git
+      - /app/__pycache__
     environment:
       - STREAMLIT_SERVER_PORT=8501
     restart: always

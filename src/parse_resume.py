@@ -1,9 +1,14 @@
 import io
-import spacy
-from spacy.matcher import Matcher
+try:
+    import spacy
+    from spacy.matcher import Matcher
+    from spacy.language import Language
+    _SPACY_OK = True
+except ImportError:
+    _SPACY_OK = False
+
 from typing import Any
 from pypdf import PdfReader
-from spacy.language import Language
 
 # Expanded skill set for better matching
 COMMON_SKILLS = [
@@ -16,17 +21,22 @@ COMMON_SKILLS = [
     "ruby", "rails", "php", "swift", "kotlin", "rust", "go", "golang"
 ]
 
-def load_nlp() -> Language:
-    """Load spaCy model."""
+def load_nlp() -> Any:
+    """Load spaCy model with robust fallbacks."""
+    if not _SPACY_OK:
+        return None
     try:
         if not spacy.util.is_package("en_core_web_sm"):
              spacy.cli.download("en_core_web_sm")
-        model = spacy.load("en_core_web_sm")
-        return model
-    except OSError:
-        print("Model not found. Attempting to download...")
-        spacy.cli.download("en_core_web_sm")
         return spacy.load("en_core_web_sm")
+    except Exception as e:
+        print(f"[load_nlp] Warning: Could not load 'en_core_web_sm': {e}")
+        try:
+            # Fallback to blank English model if download fails
+            return spacy.blank("en")
+        except Exception:
+            return None
+
 
 def parse_resume(file_obj: Any) -> tuple[str, bool]:
     """Extract text from PDF and check for images (potential photos)."""
@@ -148,21 +158,50 @@ def extract_features(text: str, nlp: Language) -> dict[str, Any]:
     matches = matcher(doc_skills)
     extracted_skills = sorted(list(set([doc_skills[start:end].text.lower() for _, start, end in matches])))
 
-    # Format Experience and Education into lists for the template bullets
-    def to_bullets(txt):
-        if not txt: return []
-        # Split by newline but retain bullet characters for downstream parsing
-        lines = [line.strip() for line in txt.split('\n') if line.strip()]
-        return lines
+    # --- Structured Parser Helpers ---
+    def parse_structured_experience(lines: list[str]):
+        objs = []
+        current = None
+        for line in lines:
+            if not line: continue
+            if line.strip().startswith(("-", "•", "*")):
+                if current:
+                    current["bullets"].append(line.lstrip("-•* ").strip())
+            else:
+                parts = [p.strip() for p in line.split("|")]
+                obj = {
+                    "company": parts[0] if len(parts) > 0 else "Company",
+                    "role": parts[1] if len(parts) > 1 else "",
+                    "date": parts[2] if len(parts) > 2 else "",
+                    "bullets": []
+                }
+                objs.append(obj)
+                current = obj
+        return objs
+
+    def parse_structured_education(lines: list[str]):
+        objs = []
+        for line in lines:
+            if not line or line.strip().startswith(("-", "•", "*")): continue
+            parts = [p.strip() for p in line.split("|")]
+            objs.append({
+                "school": parts[0] if len(parts) > 0 else "Institution",
+                "degree": parts[1] if len(parts) > 1 else "Degree",
+                "date": parts[2] if len(parts) > 2 else ""
+            })
+        return objs
+
+    exp_lines = [line.strip() for line in sections.get('experience', "").split('\n') if line.strip()]
+    edu_lines = [line.strip() for line in sections.get('education', "").split('\n') if line.strip()]
 
     return {
         'name': candidate_name or "Professional Candidate",
         'skills': extracted_skills,
-        'experience': to_bullets(sections.get('experience', "")),
-        'education': to_bullets(sections.get('education', "")),
+        'experience': parse_structured_experience(exp_lines),
+        'education': parse_structured_education(edu_lines),
         'summary': sections.get('summary', ""),
         'original_headings': found_headings,
         'section_order': section_order,
         'full_text': text,
-        'raw_sections': sections # Store for editor "auto-import"
-    }
+        'raw_sections': sections 
+    }

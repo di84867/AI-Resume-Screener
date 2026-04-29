@@ -1,0 +1,31 @@
+A Security Operations Center (SOC) Analyst is a cybersecurity professional responsible for monitoring, detecting, investigating, and responding to cyber threats in real-time. Working within a SOC, they use tools like SIEM and EDR to analyze alerts, triage security incidents, and mitigate risks to company data and networks, often working in 24/7 shifts. 
+Palo Alto Networks
+Palo Alto Networks
+ +4
+Key Responsibilities
+Continuous Monitoring: Reviewing SIEM, IDS/IPS, and EDR consoles to identify security alerts and anomalies.
+Incident Investigation: Analyzing security alerts to determine if they are true threats or false positives.
+Threat Response: Executing incident response protocols, including containing, eradicating, and recovering from threats.
+Log Analysis: Examining security logs and network traffic to identify root causes.
+Documentation & Reporting: Creating detailed reports on incidents and updating documentation for future prevention.
+Continuous Improvement: Staying updated on emerging threats and recommending security tool enhancements. 
+Exabeam
+Exabeam
+ +6
+Required Skills and Qualifications
+Technical Knowledge: Familiarity with network protocols, operating systems (Windows/Linux), and security tools.
+Tools: Experience with SIEM (Splunk, Sentinel) and EDR solutions.
+Experience: Generally 0-2 years for entry-level (L1) and 3+ years for advanced roles (L2/L3).
+Certifications: CompTIA Security+, Certified SOC Analyst (CSA), or similar are highly preferred.
+Soft Skills: Strong analytical skills, communication, and ability to work in high-pressure, fast-paced environments. 
+Accenture
+Accenture
+ +4
+Common Certifications
+CompTIA Security+
+Certified SOC Analyst (CSA)
+GIAC Security Essentials (GSEC)
+GIAC Certified Incident Handler (GCIH) 
+Accenture
+Accenture
+ +3

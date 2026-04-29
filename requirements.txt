@@ -8,5 +8,16 @@ plotly
 xhtml2pdf
 pytz
 gTTS
+SpeechRecognition
 requests
 networkx
+langchain
+langchain-community
+langchain-huggingface
+langchain-openai
+langchain-google-genai
+google-generativeai
+sentence-transformers
+pylatex
+torchvision
+watchdog

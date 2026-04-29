@@ -1,6 +1,58 @@
 import random
 from urllib.parse import quote
 
+# Company → domain mapping for logo fetching
+COMPANY_DOMAINS = {
+    "Google": "google.com",
+    "Amazon": "amazon.com",
+    "Microsoft": "microsoft.com",
+    "Oracle": "oracle.com",
+    "Meta": "meta.com",
+    "TCS": "tcs.com",
+    "Infosys": "infosys.com",
+    "Wipro": "wipro.com",
+    "Adobe": "adobe.com",
+    "Salesforce": "salesforce.com",
+    "Atlassian": "atlassian.com",
+    "Uber": "uber.com",
+    "Zomato": "zomato.com",
+    "PhonePe": "phonepe.com",
+    "Apple": "apple.com",
+    "Netflix": "netflix.com",
+    "Spotify": "spotify.com",
+    "Deloitte": "deloitte.com",
+    "Accenture": "accenture.com",
+    "Razorpay": "razorpay.com",
+}
+
+import requests
+import base64
+import streamlit as st
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def fetch_company_logo_b64(company_name: str) -> str:
+    """Server-side fetch to absorb 404s silently and return guaranteed Base64 images."""
+    domain = COMPANY_DOMAINS.get(company_name, f"{company_name.lower().replace(' ', '')}.com")
+    url = f"https://www.google.com/s2/favicons?domain={domain}&sz=128"
+    
+    try:
+        r = requests.get(url, timeout=2)
+        if r.status_code == 200 and len(r.content) > 100:
+            b64 = base64.b64encode(r.content).decode('utf-8')
+            return f"data:image/png;base64,{b64}"
+    except Exception:
+        pass
+        
+    return get_company_logo_fallback(company_name)
+
+def get_company_logo_fallback(company_name: str) -> str:
+    """Generate a clean initial-based fallback logo URL."""
+    initials = "".join([w[0] for w in company_name.split()[:2]]).upper()
+    return f"https://ui-avatars.com/api/?name={initials}&background=0D9488&color=fff&size=64&font-size=0.4&format=svg"
+
+def get_company_logo_fallback_api(company_name: str) -> str:
+    return fetch_company_logo_b64(company_name)
+
 def fetch_live_jobs(skills):
     """
     Simulates fetching real-time job openings from top platforms.
@@ -21,11 +73,9 @@ def fetch_live_jobs(skills):
         co = random.choice(companies)
         loc = random.choice(locations)
         sal = random.choice(salaries)
-        # Combine skills for descriptive title
         prefix = random.choice(["Senior", "Staff", "Lead", "Associate", "Cloud", "Neural"])
         title = f"{prefix} {main_role}"
         
-        # Generate a realistic URL
         encoded_query = quote(title)
         query_dash = title.replace(" ", "-").lower()
         platform_data = random.choice(get_job_platforms())
@@ -37,7 +87,9 @@ def fetch_live_jobs(skills):
             "salary": sal,
             "platform": platform_data["name"],
             "posted": f"{random.randint(1, 23)}h ago",
-            "url": platform_data["url"].format(query=encoded_query, query_dash=query_dash)
+            "url": platform_data["url"].format(query=encoded_query, query_dash=query_dash),
+            "logo_url": fetch_company_logo_b64(co),
+            "logo_fallback_url": get_company_logo_fallback(co),
         }
         jobs.append(job)
     return jobs

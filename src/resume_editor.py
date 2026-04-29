@@ -39,14 +39,30 @@ def generate_txt_resume(data: Dict[str, Any]) -> str:
         elif sect == 'experience' and data.get('experience'):
             lines.append(h.get('experience', 'PROFESSIONAL EXPERIENCE').upper())
             for e in data.get('experience'):
-                lines.append(f"- {e}")
+                if isinstance(e, dict):
+                    comp = e.get('company', '')
+                    role = e.get('role', '')
+                    date = e.get('date', '')
+                    header = f"{comp} | {role} | {date}".strip(" |")
+                    lines.append(header)
+                    for b in e.get('bullets', []):
+                        lines.append(f"  - {b}")
+                else:
+                    lines.append(f"- {e}")
             lines.append("")
             
         elif sect == 'education' and data.get('education'):
             lines.append(h.get('education', 'EDUCATION').upper())
             for ed in data.get('education'):
-                lines.append(f"- {ed}")
+                if isinstance(ed, dict):
+                    sch = ed.get('school', '')
+                    deg = ed.get('degree', '')
+                    date = ed.get('date', '')
+                    lines.append(f"{sch} | {deg} | {date}".strip(" |"))
+                else:
+                    lines.append(f"- {ed}")
             lines.append("")
+
             
     # 3. Skills Always at the End for ATS Parsing
     if data.get('skills'):
@@ -125,7 +141,6 @@ def generate_latex_resume(data: Dict[str, Any]) -> str:
 
     def split_right_aligned(text):
         # Tries to find Dates or Locations at the end of the string to right-align them
-        # Regex looks for patterns like: " Expected June 2026", " 2022 - 2026", " Jan 2022", " Bareilly, India"
         match = re.search(r'\s+((?:Expected\s)?(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s\d{4}.*|\d{4}\s*-\s*\d{4}.*|(?:Expected\s)?\d{4}|[A-Za-z]+,\s[A-Za-z]+)$', text, re.IGNORECASE)
         if match:
             left = text[:match.start()].strip()
@@ -151,116 +166,55 @@ def generate_latex_resume(data: Dict[str, Any]) -> str:
         
         elif sect == 'education' and data.get('education'):
             latex_code.append(f"\\section{{{escape_latex(h_edu)}}}")
-            in_itemize = False
             for ed in data.get('education'):
-                ed = ed.strip()
-                if not ed: continue
-                
-                if ed.startswith('-') or ed.startswith('•'):
-                    clean_bullet = escape_latex(ed.lstrip('-• ').strip())
-                    if not in_itemize:
-                        latex_code.append(r"\vspace{-1ex}")
-                        latex_code.append(r"\begin{itemize}")
-                        in_itemize = True
-                    latex_code.append(f"    \\item {clean_bullet}")
-                else:
-                    if in_itemize:
-                        latex_code.append(r"\end{itemize}")
-                        latex_code.append(r"\vspace{1ex}")
-                        in_itemize = False
-                        
-                    parts = [p.strip() for p in ed.split('|')]
-                    school_raw = parts[0].lstrip('-• ').strip() if len(parts) > 0 else ""
-                    
-                    if len(parts) > 1:
-                        school = escape_latex(school_raw)
-                        degree = escape_latex(parts[1]) 
-                        date = escape_latex(parts[2]) if len(parts) > 2 else ""
-                        latex_code.append(r"\noindent")
-                        latex_code.append(f"\\textbf{{{school}}} \\hfill {date} \\\\")
-                        latex_code.append(f"\\textit{{{degree}}}")
-                        if len(parts) > 3:
-                            latex_code.append(r"\vspace{0.5ex}")
-                            latex_code.append(r"\begin{itemize}")
-                            for extra in parts[3:]:
-                                if extra.strip():
-                                    latex_code.append(f"    \\item {escape_latex(extra.strip())}")
-                            latex_code.append(r"\end{itemize}")
-                            latex_code.append(r"\vspace{1ex}")
-                        else:
-                            latex_code.append(r"\vspace{1ex}")
-                    else:
-                        # Smart heuristic fallback
-                        left, right = split_right_aligned(school_raw)
-                        latex_code.append(r"\noindent")
-                        if "School" in left or "University" in left or "Board" in left or "College" in left:
-                            latex_code.append(f"\\textbf{{{escape_latex(left)}}} \\hfill \\textit{{{escape_latex(right)}}} \\\\")
-                        else:
-                            latex_code.append(f"\\textit{{{escape_latex(left)}}} \\hfill \\textit{{{escape_latex(right)}}} \\\\")
-                        latex_code.append(r"\vspace{1ex}")
-                        
-            if in_itemize:
-                latex_code.append(r"\end{itemize}")
-                latex_code.append(r"\vspace{1ex}")
+                if isinstance(ed, dict):
+                    sch = escape_latex(ed.get('school', ''))
+                    deg = escape_latex(ed.get('degree', ''))
+                    date = escape_latex(ed.get('date', ''))
+                    latex_code.append(r"\noindent")
+                    latex_code.append(f"\\textbf{{{sch}}} \\hfill {date} \\\\")
+                    latex_code.append(f"\\textit{{{deg}}} \\\\[1ex]")
+                    continue
+
+                ed_str = str(ed).strip()
+                if not ed_str: continue
+                parts = [p.strip() for p in ed_str.split('|')]
+                if len(parts) >= 2:
+                    school = escape_latex(parts[0])
+                    degree = escape_latex(parts[1])
+                    date = escape_latex(parts[2]) if len(parts) > 2 else ""
+                    latex_code.append(r"\noindent")
+                    latex_code.append(f"\\textbf{{{school}}} \\hfill {date} \\\\")
+                    latex_code.append(f"\\textit{{{degree}}} \\\\[1ex]")
             latex_code.append("")
         
         elif sect == 'experience' and data.get('experience'):
             latex_code.append(f"\\section{{{escape_latex(h_exp)}}}")
-            in_itemize = False
-            
             for item in data.get('experience'):
-                item = item.strip()
-                if not item: continue
-                
-                if item.startswith('-') or item.startswith('•'):
-                    clean_bullet = escape_latex(item.lstrip('-• ').strip())
-                    if not in_itemize:
-                        latex_code.append(r"\vspace{-1ex}")
+                if isinstance(item, dict):
+                    comp = escape_latex(item.get('company', ''))
+                    role = escape_latex(item.get('role', ''))
+                    date = escape_latex(item.get('date', ''))
+                    latex_code.append(r"\noindent")
+                    latex_code.append(f"\\textbf{{{comp}}} $|$ \\textit{{{role}}} \\hfill \\textit{{{date}}}")
+                    bullets = item.get('bullets', [])
+                    if bullets:
                         latex_code.append(r"\begin{itemize}")
-                        in_itemize = True
-                    latex_code.append(f"    \\item {clean_bullet}")
-                else:
-                    if in_itemize:
+                        for b in bullets:
+                            latex_code.append(f"    \\item {escape_latex(b)}")
                         latex_code.append(r"\end{itemize}")
-                        latex_code.append(r"\vspace{1ex}")
-                        in_itemize = False
-                        
-                    parts = [p.strip() for p in item.split('|')]
-                    company_raw = parts[0] if len(parts) > 0 else "Experience"
-                    
-                    if len(parts) == 1:
-                        left, right = split_right_aligned(company_raw)
-                        latex_code.append(r"\noindent")
-                        latex_code.append(f"\\textbf{{{escape_latex(left)}}} \\hfill \\textit{{{escape_latex(right)}}} \\\\")
-                        latex_code.append(r"\vspace{1ex}")
-                    else:
-                        company = escape_latex(company_raw)
-                        role_raw = parts[1] if len(parts) > 1 else ""
-                        left, right = split_right_aligned(role_raw)
-                        
-                        role = escape_latex(left)
-                        if len(parts) > 2:
-                            date = escape_latex(parts[2]) 
-                        else:
-                            date = escape_latex(right)
-                        
-                        latex_code.append(r"\noindent")
-                        latex_code.append(f"\\textbf{{{company}}} $|$ \\textit{{{role}}} \\hfill \\textit{{{date}}}")
-                        
-                        if len(parts) > 3:
-                            latex_code.append(r"\vspace{0.5ex}")
-                            latex_code.append(r"\begin{itemize}")
-                            for bullet in parts[3:]:
-                                if bullet.strip():
-                                    latex_code.append(f"    \\item {escape_latex(bullet.strip())}")
-                            latex_code.append(r"\end{itemize}")
-                            latex_code.append(r"\vspace{1ex}")
-                        else:
-                            latex_code.append(r"\vspace{1ex}")
-                            
-            if in_itemize:
-                latex_code.append(r"\end{itemize}")
-                latex_code.append(r"\vspace{1ex}")
+                    latex_code.append(r"\vspace{1ex}")
+                    continue
+
+                it_str = str(item).strip()
+                if not it_str: continue
+                parts = [p.strip() for p in it_str.split('|')]
+                if len(parts) >= 2:
+                    comp = escape_latex(parts[0])
+                    role = escape_latex(parts[1])
+                    date = escape_latex(parts[2]) if len(parts) > 2 else ""
+                    latex_code.append(r"\noindent")
+                    latex_code.append(f"\\textbf{{{comp}}} $|$ \\textit{{{role}}} \\hfill \\textit{{{date}}} \\\\[1ex]")
             latex_code.append("")
             
         elif sect == 'skills' and data.get('skills'):
@@ -298,32 +252,37 @@ def get_default_templates():
         "Corporate Blue": {"desc": "Professional Corporate", "color": "#0f172a", "has_photo": True},
         "Infographic Flow": {"desc": "Visual Timeline", "color": "#10b981", "has_photo": True},
         "Nordic Clean": {"desc": "Minimalist White", "color": "#334155", "has_photo": True},
-        "Silicon Vertex": {"desc": "Tech Geometric", "color": "#6366f1", "has_photo": False}
+        "Silicon Vertex": {"desc": "Tech Geometric", "color": "#6366f1", "has_photo": False},
+        "Arctic Blue": {"desc": "Cool & Professional ATS", "color": "#0891b2", "has_photo": False},
+        "Midnight Pro": {"desc": "Dark Premium Header", "color": "#0f172a", "has_photo": True},
+        "Minimalist Slate": {"desc": "Clean Text-Only", "color": "#334155", "has_photo": False},
+        "Golden Executive": {"desc": "Gold Accents, Prestigious", "color": "#854d0e", "has_photo": True},
+        "Azure Tech": {"desc": "Tech-Focused Layout", "color": "#0284c7", "has_photo": True}
     }
 
 def get_templates():
     """Load templates from registry or return defaults."""
+    defaults = get_default_templates()
     if os.path.exists(TEMPLATE_FILE):
         try:
             with open(TEMPLATE_FILE, 'r') as f:
                 user_templates = json.load(f)
-                # Merge with defaults, user templates can override or add
-                defaults = get_default_templates()
-                defaults.update(user_templates)
+                for t_name, t_config in user_templates.items():
+                    if t_name in defaults:
+                        defaults[t_name].update(t_config)
+                    else:
+                        defaults[t_name] = t_config
                 return defaults
         except:
-            return get_default_templates()
-    return get_default_templates()
+            return defaults
+    return defaults
 
 def save_user_template(name: str, config: Dict[str, Any]):
     """Save or update a template in the registry."""
     templates = get_templates()
     templates[name] = config
-    
-    # We only save the non-default ones to the JSON file to keep it clean
     defaults = get_default_templates()
     user_only = {k: v for k, v in templates.items() if k not in defaults or v != defaults[k]}
-    
     with open(TEMPLATE_FILE, 'w') as f:
         json.dump(user_only, f, indent=4)
 
@@ -331,7 +290,6 @@ def delete_user_template(name: str):
     """Remove a template from the user registry."""
     if not os.path.exists(TEMPLATE_FILE):
         return
-    
     try:
         with open(TEMPLATE_FILE, 'r') as f:
             templates = json.load(f)
@@ -360,101 +318,125 @@ def optimize_summary(data: Dict[str, Any]) -> str:
     top_skills = ", ".join(skills[:5]) if skills else "various technical"
     return f"Dynamic professional with specialized expertise in {top_skills}. Proven track record of delivering high-quality solutions."
 
-def generate_html_resume(data: Dict[str, Any], template: str = "Executive Slate", for_pdf: bool = False) -> str:
-    name = data.get('name', 'CANDIDATE NAME').upper()
-    summary = data.get('summary', '')
-    skills = data.get('skills', [])
-    experience = data.get('experience', [])
-    education = data.get('education', [])
+def generate_html_resume(data: Dict[str, Any], template: str = "Executive Slate", for_pdf: bool = False, thumbnail: bool = False) -> str:
+    name = str(data.get('name') or 'CANDIDATE NAME').upper()
+    summary = str(data.get('summary') or '')
+    skills = data.get('skills') or []
+    experience = data.get('experience') or []
+    education = data.get('education') or []
     
-    # Placeholder for photo if missing but template needs it
     templates = get_templates()
     t_config = templates.get(template, templates["Executive Slate"])
     needs_photo = t_config.get('has_photo', False)
-    
-    # Default placeholder image (Grey person icon)
     photo_url = data.get('photo', None)
     if needs_photo and not photo_url:
         photo_url = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
 
-    # Dynamic Headings from Original Resume
     h = data.get('original_headings', {})
     h_sum = h.get('summary', 'Professional Summary')
     h_exp = h.get('experience', 'Professional Experience')
     h_edu = h.get('education', 'Academic Credentials')
     h_skl = h.get('skills', 'Technical Skills')
+    custom_sects = data.get('custom_sections', {})
 
-    page_css = "@page { size: a4; margin: 1cm; }" if for_pdf else ""
-    container_style = "width: 100%;" if for_pdf else "width: 800px; margin: 0 auto; background: white; box-shadow: 0 0 10px rgba(0,0,0,0.1);"
+    # Harden CSS for xhtml2pdf compatibility
+    base_font_size = "10pt" if for_pdf else "10pt"
+    section_font_size = "12pt" if for_pdf else "13pt"
+    
+    page_css = ""
+    if for_pdf:
+        page_css = """
+        @page { size: a4; margin: 1.25cm; }
+        body { font-size: 10pt; line-height: 1.3; }
+        """
+    
+    if thumbnail:
+        container_style = "width: 850px; margin: 0; background: white; transform: scale(0.2); transform-origin: top left;"
+    else:
+        container_style = "width: 100%;" if for_pdf else "max-width: 850px; width: 100%; margin: 40px auto; background: white; box-shadow: 0 0 20px rgba(0,0,0,0.1); border-radius: 4px;"
 
     common_style = f"""
         {page_css}
         body {{ font-family: 'Helvetica', 'Arial', sans-serif; line-height: 1.5; color: #111; margin: 0; padding: 0; }}
         h1, h2, h3 {{ margin: 0; padding: 0; }}
-        ul {{ padding-left: 20px; list-style-type: square; margin-top: 5px; }}
-        li {{ margin-bottom: 6px; text-align: left; font-size: 10pt; }}
-        .section-header {{ text-transform: uppercase; font-weight: bold; border-bottom: 2px solid #333; padding-bottom: 5px; margin-bottom: 12px; margin-top: 20px; font-size: 13pt; text-align: left; }}
-        .content-box {{ margin-bottom: 20px; text-align: left; }}
-        p {{ margin: 0; padding: 0; text-align: left; font-size: 10pt; }}
+        ul {{ padding-left: 22px; list-style-type: square; margin-top: 4px; }}
+        li {{ margin-bottom: 5px; text-align: left; font-size: {base_font_size}; }}
+        .section-header {{ text-transform: uppercase; font-weight: bold; border-bottom: 2px solid #333; padding-bottom: 4px; margin-bottom: 10px; margin-top: 18px; font-size: {section_font_size}; text-align: left; }}
+        .content-box {{ margin-bottom: 15px; text-align: left; }}
+        p {{ margin: 0; padding: 0; text-align: left; font-size: {base_font_size}; }}
     """
 
     color = t_config.get('color', '#1e3a8a')
 
-    # Content generation - DYNAMIC ORDERING
-    s_order = data.get('section_order', ['summary', 'experience', 'education'])
-    # Ensure all core sections are included even if not in order
-    for core in ['summary', 'experience', 'education']:
-        if core not in s_order: s_order.append(core)
+    def render_row(left, right, bold=True):
+        style = "font-weight:bold;" if bold else ""
+        if for_pdf:
+            return f'<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:2px; {style}"><tr><td align="left">{left}</td><td align="right">{right}</td></tr></table>'
+        else:
+            return f'<div style="display: flex; justify-content: space-between; {style} margin-bottom:3px;"><span>{left}</span> <span>{right}</span></div>'
 
-    display_sections = []
-    seen = set()
-    
-    for sect in s_order:
-        if sect in seen: continue
-        seen.add(sect)
-        
-        if sect == 'summary' and summary:
-            display_sections.append(f"""
+    # Build internal section HTML
+    sections_map = {}
+    if summary:
+        sections_map['summary'] = f"""
             <div class="content-box">
                 <div class="section-header" style="border-color:{color}; color:{color};">{h_sum}</div>
-                <div style="padding-left: 5px; font-size: 10pt; line-height: 1.6;">{summary}</div>
-            </div>""")
-        elif sect == 'experience' and experience:
-            display_sections.append(f"""
-            <div class="content-box">
-                <div class="section-header" style="border-color:{color}; color:{color};">{h_exp}</div>
-                <ul style="margin-left: 0; padding-left: 18px;">
-                    {"".join([f'<li style="margin-bottom: 8px; padding-left: 5px;">{e}</li>' for e in experience])}
-                </ul>
-            </div>""")
-        elif sect == 'education' and education:
-            display_sections.append(f"""
-            <div class="content-box">
-                <div class="section-header" style="border-color:{color}; color:{color};">{h_edu}</div>
-                <ul style="margin-left: 0; padding-left: 18px;">
-                    {"".join([f'<li style="margin-bottom: 5px; padding-left: 5px;">{edu}</li>' for edu in education])}
-                </ul>
-            </div>""")
+                <div style="padding-left: 5px; font-size: {base_font_size}; line-height: 1.4;">{summary}</div>
+            </div>"""
+            
+    if experience:
+        exp_html = []
+        for e in experience:
+            if isinstance(e, dict):
+                comp, role, date = e.get('company', ''), e.get('role', ''), e.get('date', '')
+                bullets = "".join([f'<li style="margin-bottom: 3px;">{b}</li>' for b in e.get('bullets', [])])
+                header = render_row(comp, date, bold=True)
+                exp_html.append(f"""<div style="margin-bottom: 10px;">{header}<div style="font-style: italic; margin-bottom: 3px;">{role}</div><ul style="margin: 0; padding-left: 20px;">{bullets}</ul></div>""")
+            else:
+                exp_html.append(f'<li style="margin-bottom: 6px; padding-left: 5px;">{e}</li>')
+        sections_map['experience'] = f"""<div class="content-box"><div class="section-header" style="border-color:{color}; color:{color};">{h_exp}</div>{"".join(exp_html) if (experience and isinstance(experience[0], dict)) else f'<ul style="margin-left: 0; padding-left: 18px;">{"".join(exp_html)}</ul>'}</div>"""
+        
+    if education:
+        edu_html = []
+        for ed in education:
+            if isinstance(ed, dict):
+                sch, deg, date = ed.get('school', ''), ed.get('degree', ''), ed.get('date', '')
+                header = render_row(sch, date, bold=True)
+                edu_html.append(f"""<div style="margin-bottom: 8px;">{header}<div style="font-style: italic;">{deg}</div></div>""")
+            else:
+                edu_html.append(f'<li style="margin-bottom: 4px; padding-left: 5px;">{ed}</li>')
+        sections_map['education'] = f"""<div class="content-box"><div class="section-header" style="border-color:{color}; color:{color};">{h_edu}</div>{"".join(edu_html) if (education and isinstance(education[0], dict)) else f'<ul style="margin-left: 0; padding-left: 18px;">{"".join(edu_html)}</ul>'}</div>"""
 
-    sections_html = "".join(display_sections)
+    if skills:
+        skill_tags = "".join([f'<span style="background:#f8fafc; padding:3px 8px; margin:2px; display:inline-block; border-radius:4px; font-size:9pt; color:#334155; border:1px solid #e2e8f0;">{s}</span>' for s in skills])
+        if for_pdf: skill_tags = ", ".join(skills)
+        sections_map['skills'] = f"""<div class="content-box"><div class="section-header" style="border-color:{color}; color:{color};">{h_skl}</div><p>{skill_tags}</p></div>"""
 
+    for c_key, c_val in custom_sects.items():
+        sections_map[c_key] = f"""<div class="content-box"><div class="section-header" style="border-color:{color}; color:{color};">{c_key}</div><div style="padding-left: 5px;">{c_val}</div></div>"""
+
+    s_order = data.get('section_order', ['summary', 'experience', 'education', 'skills'])
+    for core in ['summary', 'experience', 'education', 'skills']:
+        if core not in s_order: s_order.append(core)
+    
+    sections_html = "".join([sections_map[sect] for sect in s_order if sect in sections_map])
 
     if template == "Executive Slate":
         style = common_style + f"""
             .sidebar {{ background-color: {color}; color: white; width: 30%; padding: 30px 15px; vertical-align: top; }}
             .main {{ width: 70%; padding: 35px 25px; vertical-align: top; }}
-            h1.side-name {{ font-size: 18pt; color: white; margin-bottom: 25px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 15px; line-height:1.2; }}
+            h1.side-name {{ font-size: 16pt; color: white; margin-bottom: 25px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 15px; line-height:1.2; text-transform: uppercase; }}
         """
-        photo_html = f'<div style="text-align:center;"><img src="{photo_url}" style="width:110px; height:110px; border-radius:55px; border:3px solid white; margin-bottom:20px; object-fit: cover;"></div>' if photo_url else ""
+        photo_html = f'<div style="text-align:center;"><img src="{photo_url}" alt="" style="width:100px; height:100px; border-radius:50px; border:2px solid white; margin-bottom:20px;"></div>' if photo_url and needs_photo else ""
         content = f"""
         <table width="100%" cellpadding="0" cellspacing="0" border="0">
             <tr>
                 <td class="sidebar">
                     {photo_html}
                     <h1 class="side-name">{name}</h1>
-                    <div style="padding: 0 10px;">
-                        <h3 style="font-size: 11pt; color: #cbd5e1; margin-bottom: 10px; text-transform: uppercase;">{h_skl}</h3>
-                        <p style="font-size: 9pt; color: #f1f5f9; line-height: 1.8;">{"<br>".join([f"• {s}" for s in skills])}</p>
+                    <div style="padding: 0 5px;">
+                        <h3 style="font-size: 10pt; color: #cbd5e1; margin-bottom: 10px; text-transform: uppercase;">{h_skl}</h3>
+                        <p style="font-size: 9pt; color: #f1f5f9; line-height: 1.6;">{"<br>".join([f"• {s}" for s in skills])}</p>
                     </div>
                 </td>
                 <td class="main">{sections_html}</td>
@@ -463,40 +445,34 @@ def generate_html_resume(data: Dict[str, Any], template: str = "Executive Slate"
         """
     elif template == "Aura Elite":
         style = common_style + f"""
-            .header {{ background: linear-gradient(135deg, {color}, #1e3a8a); color: white; padding: 40px; text-align: center; border-radius: 0 0 50px 50px; position: relative; }}
-            .main {{ padding: 40px 30px; }}
-            .photo-frame {{ width: 120px; height: 120px; border-radius: 60px; border: 4px solid white; box-shadow: 0 10px 20px rgba(0,0,0,0.2); margin: 0 auto 20px auto; overflow: hidden; background: white; }}
+            .header {{ background-color: {color}; color: white; padding: 30px; text-align: center; }}
+            .main {{ padding: 30px 40px; }}
         """
-        photo_html = f'<div class="photo-frame"><img src="{photo_url}" style="width:100%; height:100%; object-fit: cover;"></div>' if photo_url else ""
+        photo_html = f'<div style="margin-bottom:15px;"><img src="{photo_url}" alt="" style="width:100px; height:100px; border-radius:50px; border:3px solid white; margin:0 auto;"></div>' if photo_url and needs_photo else ""
         content = f"""
         <div class="header">
             {photo_html}
-            <h1 style="font-size: 26pt; margin: 0; letter-spacing: -1px;">{name}</h1>
-            <p style="opacity: 0.8; font-weight: bold; margin-top: 5px;">SENIOR STRATEGIC PROFESSIONAL</p>
+            <h1 style="font-size: 24pt; margin: 0;">{name}</h1>
+            <p style="opacity: 0.8; font-weight: bold; margin-top: 5px;">PROFESSIONAL EXCELLENCE</p>
         </div>
         <div class="main">
             {sections_html}
-            <div class="content-box">
-                <div class="section-header" style="border-color:{color}; color:{color};">{h_skl}</div>
-                <p>{" ".join([f'<span style="background:#f1f5f9; padding:4px 10px; margin:3px; display:inline-block; border-radius:20px; font-size:9pt; color:{color}; font-weight:bold; border:1px solid {color}44;">{s}</span>' for s in skills])}</p>
-            </div>
         </div>
         """
     elif template == "Spectrum Pro":
         style = common_style + f"""
-            .sidebar {{ width: 35%; background: {color}; color: white; padding: 40px 20px; vertical-align: top; }}
-            .main {{ width: 65%; padding: 40px; vertical-align: top; }}
-            .skill-tag {{ display: block; background: rgba(255,255,255,0.1); padding: 8px 12px; margin-bottom: 5px; border-radius: 6px; font-size: 9pt; }}
+            .sidebar {{ width: 33%; background: {color}; color: white; padding: 35px 20px; vertical-align: top; }}
+            .main {{ width: 67%; padding: 35px; vertical-align: top; }}
         """
-        photo_html = f'<div style="margin-bottom: 30px;"><img src="{photo_url}" style="width:100%; aspect-ratio:1/1; border-radius:15px; border:3px solid rgba(255,255,255,0.3); object-fit: cover;"></div>' if photo_url else ""
+        photo_html = f'<div style="margin-bottom: 25px;"><img src="{photo_url}" alt="" style="width:100%; border-radius:10px; border:2px solid white;"></div>' if photo_url and needs_photo else ""
         content = f"""
         <table width="100%" cellpadding="0" cellspacing="0" border="0">
             <tr>
                 <td class="sidebar">
                     {photo_html}
-                    <h1 style="font-size: 20pt; color: white; margin-bottom: 30px; line-height:1.1;">{name}</h1>
+                    <h1 style="font-size: 18pt; color: white; margin-bottom: 25px;">{name}</h1>
                     <h3 style="font-size: 10pt; color: rgba(255,255,255,0.7); text-transform: uppercase; margin-bottom: 15px;">{h_skl}</h3>
-                    {" ".join([f'<div class="skill-tag">{s}</div>' for s in skills])}
+                    {"".join([f'<div style="font-size:9pt; margin-bottom:5px;">• {s}</div>' for s in skills])}
                 </td>
                 <td class="main">{sections_html}</td>
             </tr>
@@ -505,292 +481,77 @@ def generate_html_resume(data: Dict[str, Any], template: str = "Executive Slate"
     elif template == "Harvard Classic" or template == "Standard Business":
         color = "#991b1b" if template == "Harvard Classic" else "#475569"
         style = common_style + f"""
-            .page-padding {{ padding: 35px; }}
-            h1.centered {{ text-align: center; font-size: 24pt; margin-bottom: 10px; color: {color}; text-transform: uppercase; }}
-            .header-line {{ border-bottom: 3px solid {color}; margin-bottom: 25px; }}
+            .page-padding {{ padding: 40px; }}
+            h1.centered {{ text-align: center; font-size: 22pt; margin-bottom: 8px; color: {color}; text-transform: uppercase; }}
+            .header-line {{ border-bottom: 2px solid {color}; margin-bottom: 20px; }}
         """
         content = f"""
         <div class="page-padding">
             <h1 class="centered">{name}</h1>
             <div class="header-line"></div>
             {sections_html}
-            <div class="content-box">
-                <div class="section-header" style="border-color:{color}; color:{color};">{h_skl}</div>
-                <p><b>{", ".join(skills)}</b></p>
-            </div>
         </div>
         """
     elif template == "ATS Titan":
         style = common_style + f"""
-            .header {{ border-bottom: 4px solid #000; padding-bottom: 15px; margin-bottom: 25px; }}
-            h1 {{ font-size: 24pt; text-transform: uppercase; letter-spacing: 2px; }}
-            .section-header {{ font-size: 11pt; border-bottom: 1px solid #000; margin-top: 15px; margin-bottom: 10px; font-weight: bold; }}
-            li {{ margin-bottom: 3px; }}
+            .header {{ border-bottom: 3px solid #000; padding-bottom: 12px; margin-bottom: 20px; }}
+            h1 {{ font-size: 22pt; text-transform: uppercase; }}
         """
         content = f"""
         <div style="padding:40px;">
-            <div class="header">
-                <h1>{name}</h1>
-                <p style="font-size:10pt; margin-top:5px;">{summary[:150]}...</p>
-            </div>
+            <div class="header"><h1>{name}</h1></div>
             {sections_html}
-            <div class="content-box">
-                <div class="section-header">SKILLS</div>
-                <p>{", ".join(skills)}</p>
-            </div>
-        </div>
-        """
-    elif template == "Quantum Chrono":
-        style = common_style + f"""
-            .timeline {{ border-left: 3px solid {color}; padding-left: 20px; margin-left: 10px; }}
-            .header {{ background: {color}; color: white; padding: 25px; border-radius: 8px; margin-bottom: 30px; }}
-        """
-        content = f"""
-        <div style="padding:30px;">
-            <div class="header">
-                <h1 style="margin:0; font-size:22pt;">{name}</h1>
-            </div>
-            <div class="timeline">
-                {sections_html}
-            </div>
-            <div style="margin-top:20px; background:#f0fdf4; padding:15px; border-radius:8px;">
-                <h3 style="color:{color}; margin-bottom:10px;">technical arsenal</h3>
-                <p style="font-size:9pt;">{" • ".join(skills)}</p>
-            </div>
-        </div>
-        """
-    elif template == "Glacier Simple":
-        style = common_style + f"""
-            .header {{ border-top: 10px solid {color}; padding-top: 30px; margin-bottom: 40px; }}
-            .section-header {{ color: {color} !important; border-bottom: none !important; margin-bottom: 5px !important; font-size: 14pt !important; }}
-        """
-        content = f"""
-        <div style="padding:40px;">
-            <div class="header">
-                <h1 style="font-size:32pt; font-weight:300; color:{color};">{name}</h1>
-            </div>
-            <table width="100%">
-                <tr>
-                    <td width="65%" valign="top">
-                        {sections_html}
-                    </td>
-                    <td width="35%" valign="top" style="padding-left:30px; border-left:1px solid #eee;">
-                        <h3 style="color:{color}; margin-bottom:15px;">EXPERTISE</h3>
-                        {"".join([f'<div style="margin-bottom:6px;">• {s}</div>' for s in skills])}
-                    </td>
-                </tr>
-            </table>
-        </div>
-        """
-    elif template == "Visionary Card":
-        style = common_style + f"""
-            .card {{ background: {color}; color: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); margin-bottom: 30px; }}
-            .main {{ padding: 0 20px; }}
-        """
-        photo_html = f'<img src="{photo_url}" style="width:80px; height:80px; border-radius:50%; border:3px solid white; float:right;">' if photo_url else ""
-        content = f"""
-        <div style="padding:30px;">
-            <div class="card">
-                {photo_html}
-                <h1 style="margin:0; font-size:26pt;">{name}</h1>
-                <p style="opacity:0.9; margin-top:5px;">VISIONARY LEADER</p>
-            </div>
-            <div class="main">
-                {sections_html}
-                <div class="content-box">
-                    <div class="section-header" style="color:{color}; border-color:{color};">{h_skl}</div>
-                    <p>{"  //  ".join(skills)}</p>
-                </div>
-            </div>
         </div>
         """
     elif template == "Global Specialist":
         style = common_style + f"""
-            .sidebar {{ width: 28%; background: #f8fafc; padding: 30px 20px; border-right: 2px solid {color}; }}
-            .main {{ width: 72%; padding: 40px; }}
-            h1 {{ color: {color}; font-size: 24pt; margin-bottom: 5px; }}
+            .sidebar {{ width: 28%; background: #f8fafc; padding: 30px 20px; vertical-align: top; border-right: 1px solid #ddd; }}
+            .main {{ width: 72%; padding: 35px; vertical-align: top; }}
         """
-        photo_html = f'<img src="{photo_url}" style="width:100%; border-radius:4px; margin-bottom:20px;">' if photo_url else ""
+        photo_html = f'<img src="{photo_url}" alt="" style="width:100%; border-radius:4px; margin-bottom:20px;">' if photo_url and needs_photo else ""
         content = f"""
-        <table width="100%" cellspacing="0" cellpadding="0">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0">
             <tr>
-                <td class="sidebar" valign="top">
+                <td class="sidebar">
                     {photo_html}
-                    <h3 style="color:{color}; margin-bottom:10px; font-size:11pt;">CONTACT</h3>
-                    <p style="font-size:9pt; margin-bottom:20px;">{data.get('email', 'email@example.com')}</p>
-                    
-                    <h3 style="color:{color}; margin-bottom:10px; font-size:11pt;">SKILLS</h3>
-                    {"".join([f'<div style="font-size:9pt; margin-bottom:4px; border-bottom:1px solid #e2e8f0; padding-bottom:2px;">{s}</div>' for s in skills])}
+                    <h3 style="color:{color}; font-size:11pt;">CONTACT</h3>
+                    <p style="font-size:9pt; margin-bottom:20px;">{data.get('email', '')}</p>
+                    <h3 style="color:{color}; font-size:11pt;">{h_skl}</h3>
+                    {"".join([f'<div style="font-size:9pt; margin-bottom:4px;">{s}</div>' for s in skills])}
                 </td>
-                <td class="main" valign="top">
-                    <h1 style="line-height:1;">{name}</h1>
-                    <p style="color:#64748b; font-weight:bold; margin-bottom:25px;">SENIOR SPECIALIST</p>
+                <td class="main">
+                    <h1 style="color:{color}; font-size:24pt; margin:0;">{name}</h1>
+                    <p style="color:#64748b; font-weight:bold; margin-bottom:25px;">PROFESSIONAL</p>
                     {sections_html}
                 </td>
             </tr>
         </table>
         """
-    elif template == "Creative Grid":
+    else:
+        # Visual Banner Fallback
         style = common_style + f"""
-            .grid-container {{ display: table; width: 100%; border-spacing: 15px; }}
-            .grid-item {{ display: table-cell; vertical-align: top; background: #fafafa; padding: 20px; border-radius: 10px; border: 1px solid #eee; }}
-            .header-cell {{ background: {color}; color: white; border-radius: 10px; padding: 30px; margin-bottom: 20px; }}
+            .header-banner {{ background: {color}; color: white; padding: 30px; }}
+            .main-content {{ padding: 30px 40px; }}
         """
-        photo_html = f'<img src="{photo_url}" style="width:100px; height:100px; border-radius:15px; border:3px solid white; float:left; margin-right:20px;">' if photo_url else ""
-        content = f"""
-        <div style="padding:20px;">
-            <div style="background:{color}; color:white; padding:30px; border-radius:15px; margin-bottom:20px; display: table; width: 93%;">
-                 <div style="display: table-cell; vertical-align: middle; width: 120px;">{photo_html}</div>
-                 <div style="display: table-cell; vertical-align: middle;">
-                    <h1 style="margin:0; font-size:28pt;">{name}</h1>
-                    <p style="opacity:0.9;">CREATIVE PROFESSIONAL</p>
-                 </div>
-            </div>
-            
-            <div class="grid-container">
-                <div class="grid-item" style="width: 40%; background: #fff0f5;">
-                    <h3 style="color:{color}; border-bottom: 2px solid {color}; padding-bottom:5px;">SKILLS</h3>
-                    <div style="margin-top:10px;">
-                        {" ".join([f'<span style="background:{color}; color:white; padding:4px 8px; margin:2px; display:inline-block; border-radius:4px; font-size:8pt;">{s}</span>' for s in skills])}
-                    </div>
-                </div>
-                <div class="grid-item" style="width: 60%;">
-                    {sections_html}
-                </div>
-            </div>
-        </div>
-        """
-    elif template == "Corporate Blue":
-        style = common_style + f"""
-            .header {{ background: {color}; height: 150px; position: relative; margin-bottom: 60px; }}
-            .name-card {{ background: white; width: 80%; margin: 0 auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1); padding: 30px; position: relative; top: 40px; text-align: center; border-radius: 4px; }}
-            .content-pad {{ padding: 0 40px; }}
-        """
-        photo_html = f'<img src="{photo_url}" style="width:80px; height:80px; border-radius:50%; margin-bottom:10px;">' if photo_url else ""
-        content = f"""
-        <div>
-            <div class="header">
-                <div class="name-card">
-                    {photo_html}
-                    <h1 style="color:{color}; margin:0;">{name}</h1>
-                    <p style="color:#64748b; font-size:10pt; font-weight:bold;">CORPORATE PROFESSIONAL</p>
-                </div>
-            </div>
-            <div class="content-pad">
-                {sections_html}
-                <div style="border-top:1px solid #eee; padding-top:20px; margin-top:30px; text-align:center;">
-                    <p style="font-weight:bold; color:{color};">CORE COMPETENCIES</p>
-                    <p>{ " | ".join(skills) }</p>
-                </div>
-            </div>
-        </div>
-        """
-    elif template == "Infographic Flow":
-        style = common_style + f"""
-            .flow-step {{ border-left: 4px solid {color}; padding-left: 20px; margin-bottom: 20px; margin-left: 20px; }}
-            .circle {{ width: 12px; height: 12px; background: {color}; border-radius: 50%; position: absolute; left: 45px; margin-top: 6px; }}
-        """
-        photo_html = f'<img src="{photo_url}" style="width:120px; height:120px; border-radius:50%; border:5px solid {color}; margin:0 auto; display:block; margin-bottom:20px;">' if photo_url else ""
-        content = f"""
-        <div style="padding:40px;">
-            {photo_html}
-            <h1 style="text-align:center; color:{color}; font-size:28pt; margin-bottom:40px;">{name}</h1>
-            
-            <div style="background:#f8fafc; padding:20px; border-radius:10px; margin-bottom:30px;">
-                <h3 style="color:{color}; border-bottom:1px solid {color}; padding-bottom:5px;">PROFESSIONAL JOURNEY</h3>
-                {sections_html}
-            </div>
-            
-            <div style="text-align:center;">
-                <h3 style="color:{color};">SKILL SET</h3>
-                {" ".join([f'<span style="border:1px solid {color}; color:{color}; padding:5px 10px; margin:5px; display:inline-block; border-radius:15px; font-weight:bold;">{s}</span>' for s in skills])}
-            </div>
-        </div>
-        """
-
-    elif template == "Nordic Clean":
-        style = common_style + f"""
-            .header {{ padding: 40px 0; border-bottom: 1px solid #eee; margin-bottom: 40px; text-align: center; }}
-            .section-header {{ text-align: center; border-bottom: none; font-size: 10pt; letter-spacing: 2px; color: {color}; margin-bottom: 15px; }}
-            p, li {{ text-align: center; list-style-position: inside; }}
-            ul {{ padding: 0; }}
-        """
-        photo_html = f'<img src="{photo_url}" style="width:80px; height:80px; border-radius:50%; margin-bottom:15px; object-fit:cover;">' if photo_url else ""
-        content = f"""
-        <div style="padding: 0 60px;">
-            <div class="header">
-                {photo_html}
-                <h1 style="font-weight: 300; font-size: 28pt; letter-spacing: 1px; margin-bottom: 10px;">{name}</h1>
-                <p style="color: #94a3b8; font-size: 9pt; letter-spacing: 2px; text-transform: uppercase;">Professional Candidate</p>
-                <p style="font-size: 9pt; margin-top: 10px;">{data.get('email', '')}</p>
-            </div>
-            
-            <div class="content-box">
-                <div class="section-header">PROFILE</div>
-                <p style="max-width: 80%; margin: 0 auto; line-height: 1.8;">{summary}</p>
-            </div>
-            
-            <div class="content-box">
-                <div class="section-header">EXPERIENCE</div>
-                {sections_html}
-            </div>
-            
-            <div class="content-box" style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #fafafa;">
-                <div class="section-header">EXPERTISE</div>
-                <p style="color: {color};">{"  •  ".join(skills)}</p>
-            </div>
-        </div>
-        """
-    elif template == "Silicon Vertex":
-        style = common_style + f"""
-            .header {{ background: #0f172a; color: white; padding: 40px; clip-path: polygon(0 0, 100% 0, 100% 85%, 0 100%); margin-bottom: 30px; }}
-            .section-header {{ color: {color}; border-left: 4px solid {color}; padding-left: 10px; border-bottom: none; }}
-            .tech-pill {{ background: #f1f5f9; padding: 4px 10px; border-radius: 4px; display: inline-block; margin: 0 5px 5px 0; font-family: monospace; font-size: 9pt; }}
-        """
-        content = f"""
-        <div>
-            <div class="header">
-                <h1 style="font-family: monospace; margin: 0; font-size: 32pt; color: {color};">&lt;{name} /&gt;</h1>
-                <p style="opacity: 0.7; font-family: monospace; margin-top: 5px;">FULL STACK PROFESSIONAL</p>
-            </div>
-            
-            <div style="padding: 0 40px;">
-                <div class="content-box">
-                    <div class="section-header">SYSTEM_LOG: EXPERIENCE</div>
-                    {sections_html}
-                </div>
-                
-                <div class="content-box">
-                    <div class="section-header">KERNEL_MODULES: SKILLS</div>
-                    <div style="margin-top: 10px;">
-                    {"".join([f'<span class="tech-pill">{s}</span>' for s in skills])}
-                    </div>
-                </div>
-            </div>
-        </div>
-        """
-    else: 
-        style = common_style + f"""
-            .header-banner {{ background: {color}; color: white; padding: 35px 30px; text-align: left; }}
-            .main-content {{ padding: 30px 30px; }}
-        """
-        photo_html = f'<div style="float: right;"> <img src="{photo_url}" style="width:105px; height:105px; border-radius:12px; border:3px solid white; object-fit: cover;"> </div>' if photo_url else ""
+        photo_html = f'<div style="float:right;"><img src="{photo_url}" alt="" style="width:90px; height:90px; border-radius:8px; border:2px solid white;"></div>' if photo_url and needs_photo else ""
         content = f"""
         <div class="header-banner">
             {photo_html}
-            <h1 style="font-size: 26pt; margin:0;">{name}</h1>
+            <h1 style="font-size: 22pt; margin:0;">{name}</h1>
             <p style="opacity: 0.9; font-weight: bold; margin-top:5px;">STRATEGIC PROFESSIONAL</p>
         </div>
         <div class="main-content">
             {sections_html}
-            <div class="content-box">
-                <div class="section-header" style="border-color:{color}; color:{color};">{h_skl}</div>
-                <p>{" ".join([f'<span style="background:#f1f5f9; border:1px solid #ddd; padding:3px 8px; margin:2px; display:inline-block; border-radius:4px; font-size:9pt;">{s}</span>' for s in skills])}</p>
-            </div>
         </div>
         """
 
-    return f"<html><head><meta charset='UTF-8'><style>{style}</style></head><body><div style='{container_style}'>{content}</div></body></html>"
+    html = f"""<!DOCTYPE html><html><head><meta charset="UTF-8"><style>{style}</style></head>
+    <body style="background: white;"><div style="{container_style}">{content}</div></body></html>"""
+    
+    if thumbnail:
+        # Wrap for thumbnail preview inside frame
+        return f"<!DOCTYPE html><html><head><meta charset='UTF-8'><style>{style}</style></head><body style='overflow:hidden; background:transparent;'><div style='{container_style}'>{content}</div></body></html>"
+    return html
 
 def convert_html_to_pdf(html_content: str) -> bytes:
     result = io.BytesIO()

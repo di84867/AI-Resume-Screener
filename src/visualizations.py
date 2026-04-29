@@ -81,7 +81,8 @@ def create_skill_network(processed_data, jd_text="", theme='dark'):
             camera=dict(eye=dict(x=1.5, y=1.5, z=1.5))
         ),
         paper_bgcolor='rgba(0,0,0,0)',
-        margin=dict(t=0, b=0, l=0, r=0),
+        margin=dict(t=10, b=10, l=10, r=10),
+        height=700,
         showlegend=False,
         hovermode='closest'
     )
