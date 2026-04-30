@@ -1,11 +1,12 @@
 services:
   ai-resume-screener:
     build: .
+    image: ai-resume-screener
+    container_name: AI-Resume-Screener
     ports:
       - "8501:8501"
     volumes:
       - .:/app
-      # Anonymous volumes to exclude heavy directories from the bind mount
       - /app/.venv
       - /app/.git
       - /app/__pycache__
