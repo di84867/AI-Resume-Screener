@@ -28,22 +28,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     texlive-fonts-recommended \
     && rm -rf /var/lib/apt/lists/*
 
-# Create a non-root user and set permissions
-RUN useradd -m -u 1000 appuser && \
-    chown -R appuser:appuser /app
-
 # Copy the requirements file into the container
-COPY --chown=appuser:appuser requirements.txt .
+COPY requirements.txt .
 
-# Switch to non-root user for subsequent commands
-USER appuser
-
-# Install Python dependencies
+# Install Python dependencies as root to ensure they are in the global PATH
 RUN pip install --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 # Pre-download the spaCy model
 RUN python -m spacy download en_core_web_sm
+
+# Create a non-root user and set permissions
+RUN useradd -m -u 1000 appuser && \
+    chown -R appuser:appuser /app
+
+# Switch to non-root user for running the app
+USER appuser
 
 # Copy the rest of the application code
 COPY --chown=appuser:appuser . .
