@@ -11,14 +11,10 @@ gTTS
 SpeechRecognition
 requests
 networkx
-langchain
-langchain-community
+langchain-core
 langchain-huggingface
 langchain-openai
 langchain-google-genai
-google-generativeai
-sentence-transformers
 pylatex
-torchvision
 watchdog
-en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl
+en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl
