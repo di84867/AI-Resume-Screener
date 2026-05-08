@@ -1,0 +1,6 @@
+ffmpeg
+texlive-latex-base
+texlive-latex-extra
+texlive-fonts-recommended
+libcairo2-dev
+pkg-config

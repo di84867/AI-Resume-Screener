@@ -102,9 +102,25 @@ AI-Resume-Intelligence/
 
 ## 🚢 Infrastructure & Deployment
 
-- **Docker**: Containerized deployment via `docker-compose.yml`.
-- **Streamlit**: Responsive, dark-themed UI built natively in Python.
-- **Custom CSS Design System**: Features Google Fonts (Outfit), Glassmorphism, and micro-animations.
+### ☁️ Streamlit Cloud (Recommended)
+This project is optimized for **Streamlit Cloud**.
+1. **Packages**: System dependencies are pre-configured in `packages.txt`.
+2. **Environment**: Python version is locked in `runtime.txt`.
+3. **Secrets**: Add your API keys in the Streamlit Cloud dashboard:
+   ```toml
+   OPENAI_API_KEY = "your_key"
+   GEMINI_API_KEY = "your_key"
+   HF_TOKEN = "your_token"
+   ```
+
+### 🐳 Docker
+The easiest way to get started locally is using Docker Compose:
+
+```bash
+docker-compose up --build
+```
+
+The application will be available at `http://localhost:8501`.
 
 ---
 
@@ -125,7 +141,6 @@ AI-Resume-Intelligence/
 3. **Install Dependencies**
    ```bash
    pip install -r requirements.txt
-   python -m spacy download en_core_web_lg
    ```
 
 4. **Environment Variables**
@@ -143,23 +158,10 @@ AI-Resume-Intelligence/
 
 ---
 
-### 🐳 Quick Start with Docker
-
-The easiest way to get started is using Docker Compose:
-
-```bash
-docker-compose up --build
-```
-
-The application will be available at `http://localhost:8501`.
-
----
-
 ## ✨ Design Aesthetics
 
 The UI utilizes a **Custom CSS Design System** embedded in `app.py`, featuring:
 - **Premium Typography**: Google Fonts (Outfit).
 - **Glassmorphism**: High-end feel with translucent card effects.
-- **Dynamic Gradients**: Responsive background and interactive element styling.
 
 ---
