@@ -1,6 +1,11 @@
+build-essential
+curl
+git
+libgl1
+libcairo2-dev
+pkg-config
+python3-dev
 ffmpeg
 texlive-latex-base
 texlive-latex-extra
 texlive-fonts-recommended
-libcairo2-dev
-pkg-config

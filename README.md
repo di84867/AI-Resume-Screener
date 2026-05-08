@@ -100,27 +100,38 @@ AI-Resume-Intelligence/
 
 ---
 
-## 🚢 Infrastructure & Deployment
+## 🚢 Infrastructure & Hosting
 
-### ☁️ Streamlit Cloud (Recommended)
-This project is optimized for **Streamlit Cloud**.
-1. **Packages**: System dependencies are pre-configured in `packages.txt`.
-2. **Environment**: Python version is locked in `runtime.txt`.
-3. **Secrets**: Add your API keys in the Streamlit Cloud dashboard:
+You can host this application using either **Docker** (recommended for private/on-premise) or **Streamlit Cloud** (recommended for public demos).
+
+### 🐳 Option 1: Docker (Self-Hosted)
+The application is fully containerized with a production-ready setup.
+
+1. **Setup Environment**:
+   Copy `.env.example` to `.env` and fill in your API keys:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Deploy with Docker Compose**:
+   ```bash
+   docker-compose up --build -d
+   ```
+   Available at `http://localhost:8501`.
+
+### ☁️ Option 2: Streamlit Cloud (Managed)
+Optimized for one-click deployment from GitHub.
+
+1. **System Dependencies**: Automatically handled via `packages.txt` and `runtime.txt`.
+2. **Secrets Management**: Add your API keys in the Streamlit Cloud dashboard under "Settings > Secrets":
    ```toml
    OPENAI_API_KEY = "your_key"
    GEMINI_API_KEY = "your_key"
    HF_TOKEN = "your_token"
    ```
 
-### 🐳 Docker
-The easiest way to get started locally is using Docker Compose:
-
-```bash
-docker-compose up --build
-```
-
-The application will be available at `http://localhost:8501`.
+### 🛡️ Security Note
+Both methods support environment variables for key management. The Docker image runs as a non-root user for added security.
 
 ---
 
